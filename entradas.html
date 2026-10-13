@@ -1,21 +1,17 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <title>Noche Retro 80 & 90 | Aura Palace</title>
 
-  <!-- VISTA PREVIA PARA WHATSAPP Y REDES -->
+  <!-- VISTA PREVIA WHATSAPP / REDES -->
   <meta property="og:title" content="Noche Retro 80 & 90 | Aura Palace">
   <meta property="og:description" content="Sábado 14 de noviembre · 22 hs · Aura Palace · Entradas $20.000">
   <meta property="og:image" content="https://lisestudiodic-svg.github.io/aura-palace-qr/miniatura.jpg">
-  <meta property="og:image:width" content="1536">
-  <meta property="og:image:height" content="1024">
   <meta property="og:url" content="https://lisestudiodic-svg.github.io/aura-palace-qr/entradas.html">
   <meta property="og:type" content="website">
-
   <meta name="twitter:card" content="summary_large_image">
 
   <style>
@@ -104,16 +100,22 @@
       margin: 5px 0 20px;
     }
 
-    button {
+    button, .boton-mp {
       width: 100%;
       border: 0;
       border-radius: 12px;
       padding: 18px 15px;
-      background: linear-gradient(135deg,#d6b25e,#96701f);
-      color: #111;
       font-size: 16px;
       font-weight: 800;
       cursor: pointer;
+      text-decoration: none;
+      display: block;
+      text-align: center;
+    }
+
+    .boton-principal {
+      background: linear-gradient(135deg,#d6b25e,#96701f);
+      color: #111;
     }
 
     button:disabled {
@@ -167,18 +169,40 @@
       border-color: #cba54f;
     }
 
-    .medio {
-      border: 1px solid #806426;
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 20px;
-      background: #17140d;
+    .opciones {
+      display: grid;
+      gap: 14px;
+      margin-top: 20px;
     }
 
-    .medio strong {
-      color: #e0ba60;
+    .opcion {
+      width: 100%;
+      padding: 18px;
+      border-radius: 14px;
+      border: 1px solid #806426;
+      background: #17140d;
+      color: white;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .opcion strong {
       display: block;
+      color: #e0ba60;
+      font-size: 17px;
       margin-bottom: 5px;
+    }
+
+    .opcion span {
+      color: #aaa;
+      font-size: 13px;
+    }
+
+    .detalle-pago {
+      display: none;
+      margin-top: 22px;
+      padding-top: 20px;
+      border-top: 1px solid #3d321a;
     }
 
     .dato {
@@ -204,12 +228,18 @@
       color: #06190d;
     }
 
+    .boton-mp {
+      margin-top: 20px;
+      background: #009ee3;
+      color: white;
+    }
+
     .nota {
       text-align: center;
-      color: #777;
+      color: #888;
       font-size: 12px;
       line-height: 1.5;
-      margin-top: 22px;
+      margin-top: 18px;
     }
 
     footer {
@@ -252,7 +282,7 @@
     <div class="price-label">ENTRADA GENERAL</div>
     <div class="price">$20.000</div>
 
-    <button onclick="abrirCompra()">
+    <button class="boton-principal" onclick="abrirCompra()">
       COMPRAR ENTRADA
     </button>
 
@@ -263,12 +293,9 @@
 
     <h2>Reservá tu entrada</h2>
 
-    <p>
-      Completá tus datos para continuar con el pago.
-    </p>
+    <p>Completá tus datos para continuar.</p>
 
     <label>NOMBRE Y APELLIDO</label>
-
     <input
       id="nombre"
       type="text"
@@ -277,7 +304,6 @@
     >
 
     <label>WHATSAPP</label>
-
     <input
       id="telefono"
       type="tel"
@@ -287,7 +313,7 @@
 
     <br><br>
 
-    <button id="btnContinuar" onclick="continuarPago()">
+    <button class="boton-principal" onclick="mostrarMedios()">
       CONTINUAR AL PAGO
     </button>
 
@@ -296,44 +322,83 @@
 
   <section class="pago" id="pago">
 
-    <h2>Medio de pago</h2>
-
-    <div class="medio">
-      <strong>🏦 TRANSFERENCIA BANCARIA</strong>
-      Entrada general · $20.000
-    </div>
+    <h2>Elegí cómo pagar</h2>
 
     <div class="aviso">
-      Transferí el importe y luego enviá el comprobante por WhatsApp.
-      Tu entrada quedará confirmada una vez verificado el pago.
+      Entrada general · <strong>$20.000</strong>
     </div>
 
-    <div class="dato">
-      <span>IMPORTE</span>
-      <strong>$20.000</strong>
+    <div class="opciones">
+
+      <button class="opcion" onclick="elegirTransferencia()">
+        <strong>🏦 TRANSFERENCIA BANCARIA</strong>
+        <span>Transferí a Banco Galicia y enviá el comprobante.</span>
+      </button>
+
+      <button class="opcion" onclick="elegirMercadoPago()">
+        <strong>💳 MERCADO PAGO</strong>
+        <span>Pagá online desde Mercado Pago.</span>
+      </button>
+
     </div>
 
-    <div class="dato">
-      <span>BANCO</span>
-      <strong>Galicia</strong>
+
+    <div class="detalle-pago" id="transferencia">
+
+      <h2>Datos para transferencia</h2>
+
+      <div class="dato">
+        <span>IMPORTE</span>
+        <strong>$20.000</strong>
+      </div>
+
+      <div class="dato">
+        <span>BANCO</span>
+        <strong>Galicia</strong>
+      </div>
+
+      <div class="dato">
+        <span>ALIAS</span>
+        <strong>CRISTIAN.SAXO</strong>
+      </div>
+
+      <div class="dato">
+        <span>TITULAR</span>
+        <strong>Ernesto Cristian Berrondo</strong>
+      </div>
+
+      <button class="whatsapp" onclick="enviarComprobante()">
+        ENVIAR COMPROBANTE POR WHATSAPP
+      </button>
+
+      <div class="nota">
+        La entrada quedará confirmada después de verificar la transferencia.
+      </div>
+
     </div>
 
-    <div class="dato">
-      <span>ALIAS</span>
-      <strong>CRISTIAN.SAXO</strong>
-    </div>
 
-    <div class="dato">
-      <span>TITULAR</span>
-      <strong>Ernesto Cristian Berrondo</strong>
-    </div>
+    <div class="detalle-pago" id="mercadopago">
 
-    <button class="whatsapp" onclick="enviarComprobante()">
-      ENVIAR COMPROBANTE POR WHATSAPP
-    </button>
+      <h2>Mercado Pago</h2>
 
-    <div class="nota">
-      Luego de verificar el pago recibirás tu QR individual de acceso.
+      <div class="aviso">
+        Vas a continuar a Mercado Pago para realizar el pago de tu entrada.
+      </div>
+
+      <div class="dato">
+        <span>TOTAL</span>
+        <strong>$20.000</strong>
+      </div>
+
+      <button class="boton-mp" onclick="pagarMercadoPago()">
+        PAGAR $20.000 CON MERCADO PAGO
+      </button>
+
+      <div class="nota">
+        Después del pago, conservá el comprobante hasta recibir tu QR de acceso.
+      </div>
+
     </div>
 
   </section>
@@ -351,6 +416,12 @@
 const URL_RESERVAS =
 "https://script.google.com/macros/s/AKfycbyzmeOxhVUQw956gvZjYv33RhkBVKVgvYIHsvW82mgHQ-DH7m58sp1icvRuFMMQADuLOA/exec";
 
+const LINK_MERCADO_PAGO =
+"https://mpago.la/1i7ot5T";
+
+let reservaRegistrada = false;
+let medioRegistrado = "";
+
 
 function abrirCompra() {
 
@@ -363,32 +434,55 @@ function abrirCompra() {
 }
 
 
-async function continuarPago() {
+function datosValidos() {
 
-  const nombre =
-    document.getElementById("nombre").value.trim();
-
-  const telefono =
-    document.getElementById("telefono").value.trim();
+  const nombre = document.getElementById("nombre").value.trim();
+  const telefono = document.getElementById("telefono").value.trim();
 
   if (!nombre || !telefono) {
     alert("Completá tu nombre y WhatsApp para continuar.");
-    return;
+    return false;
   }
 
-  const boton =
-    document.getElementById("btnContinuar");
+  return true;
+}
 
-  boton.disabled = true;
-  boton.innerText = "REGISTRANDO RESERVA...";
+
+function mostrarMedios() {
+
+  if (!datosValidos()) return;
+
+  document.getElementById("pago").style.display = "block";
+
+  document.getElementById("pago").scrollIntoView({
+    behavior: "smooth"
+  });
+
+}
+
+
+async function registrarReserva(medioPago) {
+
+  if (!datosValidos()) return false;
+
+  /*
+    Evita registrar dos veces si la persona toca
+    nuevamente el mismo medio de pago.
+  */
+  if (reservaRegistrada && medioRegistrado === medioPago) {
+    return true;
+  }
+
+  const nombre = document.getElementById("nombre").value.trim();
+  const telefono = document.getElementById("telefono").value.trim();
+
+  const datos = new URLSearchParams();
+
+  datos.append("nombre", nombre);
+  datos.append("telefono", telefono);
+  datos.append("medioPago", medioPago);
 
   try {
-
-    const datos = new URLSearchParams();
-
-    datos.append("nombre", nombre);
-    datos.append("telefono", telefono);
-    datos.append("medioPago", "TRANSFERENCIA");
 
     await fetch(URL_RESERVAS, {
       method: "POST",
@@ -399,32 +493,58 @@ async function continuarPago() {
       body: datos.toString()
     });
 
-    document.getElementById("pago").style.display = "block";
+    reservaRegistrada = true;
+    medioRegistrado = medioPago;
 
-    document.getElementById("pago").scrollIntoView({
-      behavior: "smooth"
-    });
-
-    boton.innerText = "RESERVA REGISTRADA ✓";
+    return true;
 
   } catch (error) {
 
-    boton.disabled = false;
-    boton.innerText = "CONTINUAR AL PAGO";
-
     alert("No pudimos registrar la reserva. Intentá nuevamente.");
+    return false;
   }
+
+}
+
+
+async function elegirTransferencia() {
+
+  document.getElementById("mercadopago").style.display = "none";
+
+  const ok = await registrarReserva("TRANSFERENCIA");
+
+  if (!ok) return;
+
+  document.getElementById("transferencia").style.display = "block";
+
+  document.getElementById("transferencia").scrollIntoView({
+    behavior: "smooth"
+  });
+
+}
+
+
+async function elegirMercadoPago() {
+
+  document.getElementById("transferencia").style.display = "none";
+
+  const ok = await registrarReserva("MERCADO PAGO");
+
+  if (!ok) return;
+
+  document.getElementById("mercadopago").style.display = "block";
+
+  document.getElementById("mercadopago").scrollIntoView({
+    behavior: "smooth"
+  });
 
 }
 
 
 function enviarComprobante() {
 
-  const nombre =
-    document.getElementById("nombre").value.trim();
-
-  const telefono =
-    document.getElementById("telefono").value.trim();
+  const nombre = document.getElementById("nombre").value.trim();
+  const telefono = document.getElementById("telefono").value.trim();
 
   const mensaje =
 `Hola, realicé la transferencia de $20.000 para Noche Retro en Aura Palace.
@@ -439,6 +559,13 @@ Adjunto el comprobante de pago.`;
     encodeURIComponent(mensaje);
 
   window.open(url, "_blank");
+
+}
+
+
+function pagarMercadoPago() {
+
+  window.open(LINK_MERCADO_PAGO, "_blank");
 
 }
 
