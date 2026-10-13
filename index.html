@@ -81,6 +81,8 @@
             ultimaLectura = ahora;
 
             mostrar("QR DETECTADO: " + codigo);
+            sonar();
+if (navigator.vibrate) navigator.vibrate(200);
           },
           function() {}
         );
@@ -95,6 +97,33 @@
     function mostrar(mensaje) {
       document.getElementById("resultado").textContent = mensaje;
     }
+
+function sonar() {
+  try {
+    const AudioContexto =
+      window.AudioContext || window.webkitAudioContext;
+
+    const audio = new AudioContexto();
+    const oscilador = audio.createOscillator();
+    const volumen = audio.createGain();
+
+    oscilador.type = "sine";
+    oscilador.frequency.value = 950;
+
+    volumen.gain.value = 0.15;
+
+    oscilador.connect(volumen);
+    volumen.connect(audio.destination);
+
+    oscilador.start();
+    oscilador.stop(audio.currentTime + 0.15);
+
+    oscilador.onended = () => audio.close();
+  } catch (error) {
+    console.log("Sonido no disponible", error);
+  }
+}
+
   </script>
 </body>
 </html>
