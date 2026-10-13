@@ -24,10 +24,6 @@ body {
   text-align: center;
 }
 
-.cabecera {
-  margin-bottom: 14px;
-}
-
 h1 {
   margin: 5px 0 2px;
   color: #d7b878;
@@ -36,14 +32,14 @@ h1 {
 }
 
 .subtitulo {
-  margin: 0;
+  margin-bottom: 12px;
   font-size: 15px;
   letter-spacing: 1px;
   color: #ddd;
 }
 
 #sesion {
-  margin: 12px 0;
+  margin: 10px 0;
   font-size: 14px;
   color: #aaa;
 }
@@ -59,45 +55,51 @@ button {
   color: #111;
   font-size: 18px;
   font-weight: bold;
-  cursor: pointer;
 }
 
+/* CAMARA */
 #reader {
   width: 100%;
   max-width: 440px;
-  min-height: 300px;
   margin: 14px auto;
-  background: #050505;
   border: 2px solid #d7b878;
   border-radius: 16px;
   overflow: hidden;
+  background: #000;
 }
+
+/*
+IMPORTANTE:
+NO fijamos min-height ni aspect-ratio.
+Dejamos que html5-qrcode determine
+el tamaño real del video.
+*/
 
 #reader video {
   width: 100% !important;
-  height: auto !important;
   display: block !important;
+  object-fit: cover !important;
 }
 
 #resultado {
   width: 100%;
   max-width: 440px;
-  min-height: 175px;
-  margin: 14px auto 20px;
+  min-height: 170px;
+  margin: 14px auto;
   padding: 22px 15px;
   border-radius: 16px;
   background: #293241;
+
   display: flex;
   flex-direction: column;
-  align-items: center;
   justify-content: center;
-  transition: background .2s;
+  align-items: center;
 }
 
 #estado {
   font-size: 27px;
   line-height: 1.15;
-  font-weight: 800;
+  font-weight: bold;
 }
 
 #detalle {
@@ -105,29 +107,28 @@ button {
   font-size: 19px;
   line-height: 1.4;
   white-space: pre-line;
-  overflow-wrap: anywhere;
 }
 
 .pie {
-  margin-top: 10px;
   color: #777;
   font-size: 12px;
+  margin-top: 10px;
 }
 </style>
 </head>
 
 <body>
 
-<div class="cabecera">
-  <h1>AURA PALACE</h1>
-  <div class="subtitulo">CONTROL DE ENTRADAS</div>
-</div>
+<h1>AURA PALACE</h1>
+<div class="subtitulo">CONTROL DE ENTRADAS</div>
 
 <button id="iniciar" onclick="iniciarControl()">
   INICIAR CONTROL
 </button>
 
-<div id="sesion">Acceso protegido con Google</div>
+<div id="sesion">
+  Acceso protegido con Google
+</div>
 
 <div id="reader"></div>
 
@@ -139,6 +140,7 @@ button {
 <div class="pie">
   Sistema de control de acceso · Aura Palace
 </div>
+
 
 <script>
 
@@ -157,21 +159,26 @@ let ultimoCodigo = "";
 let ultimoMomento = 0;
 
 
-/* =========================
+/* ==============================
    PANTALLA
-========================= */
+============================== */
 
 function mostrar(titulo, detalle, color) {
 
-  document.getElementById("estado").textContent = titulo;
-  document.getElementById("detalle").textContent = detalle || "";
-  document.getElementById("resultado").style.background = color;
+  document.getElementById("estado").textContent =
+    titulo;
+
+  document.getElementById("detalle").textContent =
+    detalle || "";
+
+  document.getElementById("resultado").style.background =
+    color;
 }
 
 
-/* =========================
+/* ==============================
    SONIDOS
-========================= */
+============================== */
 
 function tono(freq, duracion) {
 
@@ -197,9 +204,13 @@ function tono(freq, duracion) {
     gain.connect(audio.destination);
 
     osc.start();
-    osc.stop(audio.currentTime + duracion);
 
-    osc.onended = () => audio.close();
+    osc.stop(
+      audio.currentTime + duracion
+    );
+
+    osc.onended = () =>
+      audio.close();
 
   } catch(e) {}
 }
@@ -209,9 +220,10 @@ function sonidoValido() {
 
   tono(880, .12);
 
-  setTimeout(() => {
-    tono(1250, .18);
-  }, 140);
+  setTimeout(
+    () => tono(1250, .18),
+    140
+  );
 }
 
 
@@ -219,9 +231,10 @@ function sonidoUtilizada() {
 
   tono(500, .20);
 
-  setTimeout(() => {
-    tono(500, .20);
-  }, 260);
+  setTimeout(
+    () => tono(500, .20),
+    260
+  );
 }
 
 
@@ -231,17 +244,20 @@ function sonidoError() {
 }
 
 
-/* =========================
+/* ==============================
    GOOGLE
-========================= */
+============================== */
 
 function iniciarControl() {
 
-  if (!window.google || !google.accounts) {
+  if (
+    !window.google ||
+    !google.accounts
+  ) {
 
     mostrar(
       "ERROR",
-      "No se pudo iniciar Google.\nActualizá la página.",
+      "Actualizá la página e intentá nuevamente.",
       "#b91c1c"
     );
 
@@ -263,7 +279,7 @@ function iniciarControl() {
 
           mostrar(
             "ERROR DE ACCESO",
-            "No se pudo iniciar sesión con Google.",
+            "No se pudo conectar con Google.",
             "#b91c1c"
           );
 
@@ -284,8 +300,8 @@ function iniciarControl() {
 
 
         mostrar(
-          "INICIANDO CÁMARA...",
-          "Preparando lector QR",
+          "INICIANDO...",
+          "Preparando cámara",
           "#293241"
         );
 
@@ -301,9 +317,9 @@ function iniciarControl() {
 }
 
 
-/* =========================
-   LEER PLANILLA
-========================= */
+/* ==============================
+   LEER ENTRADAS
+============================== */
 
 async function leerEntradas() {
 
@@ -324,35 +340,32 @@ async function leerEntradas() {
     await fetch(url, {
 
       headers: {
+
         Authorization:
           "Bearer " + accessToken
       }
     });
 
 
-  const texto =
-    await respuesta.text();
-
-
   if (!respuesta.ok) {
 
     throw new Error(
-      "No se pudo consultar la lista."
+      "Error consultando entradas"
     );
   }
 
 
   const datos =
-    JSON.parse(texto);
+    await respuesta.json();
 
 
   return datos.values || [];
 }
 
 
-/* =========================
+/* ==============================
    REGISTRAR INGRESO
-========================= */
+============================== */
 
 async function registrarIngreso(fila) {
 
@@ -391,8 +404,11 @@ async function registrarIngreso(fila) {
       body: JSON.stringify({
 
         values: [[
+
           "INGRESO REGISTRADO",
+
           new Date().toISOString()
+
         ]]
       })
     });
@@ -401,15 +417,15 @@ async function registrarIngreso(fila) {
   if (!respuesta.ok) {
 
     throw new Error(
-      "No se pudo registrar el ingreso."
+      "Error registrando ingreso"
     );
   }
 }
 
 
-/* =========================
+/* ==============================
    VALIDAR QR
-========================= */
+============================== */
 
 async function validarEntrada(codigo) {
 
@@ -417,8 +433,12 @@ async function validarEntrada(codigo) {
     String(codigo || "").trim();
 
 
-  if (!codigo || procesando)
+  if (
+    !codigo ||
+    procesando
+  ) {
     return;
+  }
 
 
   const ahora =
@@ -429,6 +449,7 @@ async function validarEntrada(codigo) {
     codigo === ultimoCodigo &&
     ahora - ultimoMomento < 3000
   ) {
+
     return;
   }
 
@@ -460,17 +481,19 @@ async function validarEntrada(codigo) {
       entradas.findIndex(
 
         fila =>
-          String(fila[1] || "").trim() === codigo
+          String(
+            fila[1] || ""
+          ).trim() === codigo
       );
 
 
-    /* NO EXISTE */
+    /* QR INEXISTENTE */
 
     if (indice === -1) {
 
       mostrar(
         "✕ INGRESO RECHAZADO",
-        "ENTRADA NO VÁLIDA\nNO PERMITIR INGRESO",
+        "ENTRADA NO VÁLIDA\n\nNO PERMITIR INGRESO",
         "#b91c1c"
       );
 
@@ -478,9 +501,12 @@ async function validarEntrada(codigo) {
       sonidoError();
 
 
-      if (navigator.vibrate)
-        navigator.vibrate([400,150,400]);
+      if (navigator.vibrate) {
 
+        navigator.vibrate(
+          [400,150,400]
+        );
+      }
 
       return;
     }
@@ -491,23 +517,31 @@ async function validarEntrada(codigo) {
 
 
     const numero =
-      String(entrada[0] || "");
+      String(
+        entrada[0] || ""
+      );
 
 
     const comprador =
-      String(entrada[2] || "").trim();
+      String(
+        entrada[2] || ""
+      ).trim();
 
 
     const pago =
-      String(entrada[4] || "")
-        .trim()
-        .toUpperCase();
+      String(
+        entrada[4] || ""
+      )
+      .trim()
+      .toUpperCase();
 
 
     const ingreso =
-      String(entrada[5] || "")
-        .trim()
-        .toUpperCase();
+      String(
+        entrada[5] || ""
+      )
+      .trim()
+      .toUpperCase();
 
 
     /* YA UTILIZADA */
@@ -518,6 +552,7 @@ async function validarEntrada(codigo) {
     ) {
 
       mostrar(
+
         "⚠ ENTRADA YA UTILIZADA",
 
         "Entrada N.º " +
@@ -536,9 +571,12 @@ async function validarEntrada(codigo) {
       sonidoUtilizada();
 
 
-      if (navigator.vibrate)
-        navigator.vibrate([250,120,250]);
+      if (navigator.vibrate) {
 
+        navigator.vibrate(
+          [250,120,250]
+        );
+      }
 
       return;
     }
@@ -546,9 +584,12 @@ async function validarEntrada(codigo) {
 
     /* NO PAGADA */
 
-    if (pago !== "PAGADO") {
+    if (
+      pago !== "PAGADO"
+    ) {
 
       mostrar(
+
         "✕ ENTRADA NO HABILITADA",
 
         "Entrada N.º " +
@@ -567,9 +608,12 @@ async function validarEntrada(codigo) {
       sonidoError();
 
 
-      if (navigator.vibrate)
-        navigator.vibrate([400,150,400]);
+      if (navigator.vibrate) {
 
+        navigator.vibrate(
+          [400,150,400]
+        );
+      }
 
       return;
     }
@@ -586,9 +630,10 @@ async function validarEntrada(codigo) {
     );
 
 
-    /* AUTORIZADA */
+    /* AUTORIZAR */
 
     mostrar(
+
       "✓ INGRESO AUTORIZADO",
 
       "Entrada N.º " +
@@ -607,8 +652,10 @@ async function validarEntrada(codigo) {
     sonidoValido();
 
 
-    if (navigator.vibrate)
+    if (navigator.vibrate) {
+
       navigator.vibrate(180);
+    }
 
 
   } catch(error) {
@@ -623,10 +670,6 @@ async function validarEntrada(codigo) {
     sonidoError();
 
 
-    if (navigator.vibrate)
-      navigator.vibrate([400,150,400]);
-
-
   } finally {
 
     procesando =
@@ -635,23 +678,72 @@ async function validarEntrada(codigo) {
 }
 
 
-/* =========================
+/* ==============================
    CÁMARA
-========================= */
+============================== */
 
 async function iniciarCamara() {
 
-  scanner =
-    new Html5Qrcode("reader");
-
-
   try {
+
+    scanner =
+      new Html5Qrcode(
+        "reader",
+        false
+      );
+
+
+    const camaras =
+      await Html5Qrcode.getCameras();
+
+
+    if (
+      !camaras ||
+      camaras.length === 0
+    ) {
+
+      throw new Error(
+        "No se encontró cámara"
+      );
+    }
+
+
+    /*
+      En Android intentamos utilizar
+      directamente la cámara trasera.
+    */
+
+    let camaraElegida =
+      camaras[camaras.length - 1].id;
+
+
+    const trasera =
+      camaras.find(camara => {
+
+        const nombre =
+          String(
+            camara.label || ""
+          ).toLowerCase();
+
+        return (
+          nombre.includes("back") ||
+          nombre.includes("rear") ||
+          nombre.includes("environment") ||
+          nombre.includes("trasera")
+        );
+      });
+
+
+    if (trasera) {
+
+      camaraElegida =
+        trasera.id;
+    }
+
 
     await scanner.start(
 
-      {
-        facingMode: "environment"
-      },
+      camaraElegida,
 
       {
         fps: 10,
@@ -659,9 +751,7 @@ async function iniciarCamara() {
         qrbox: {
           width: 240,
           height: 240
-        },
-
-        aspectRatio: 1
+        }
       },
 
       (codigo) => {
@@ -686,7 +776,7 @@ async function iniciarCamara() {
 
     mostrar(
       "ERROR DE CÁMARA",
-      "Revisá el permiso de cámara y actualizá la página.",
+      "No se pudo abrir la cámara.\nRevisá el permiso de cámara.",
       "#b91c1c"
     );
   }
