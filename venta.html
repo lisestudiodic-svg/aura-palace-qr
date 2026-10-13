@@ -104,11 +104,13 @@
       cursor: pointer;
     }
 
-    button:hover {
-      opacity: .92;
+    button:disabled {
+      opacity: .55;
+      cursor: wait;
     }
 
-    .formulario {
+    .formulario,
+    .pago {
       display: none;
       margin-top: 25px;
       padding: 25px 20px;
@@ -117,12 +119,14 @@
       border-radius: 18px;
     }
 
-    .formulario h2 {
-      font-size: 23px;
+    .formulario h2,
+    .pago h2 {
+      color: #e0ba60;
       margin-bottom: 8px;
     }
 
-    .formulario p {
+    .formulario p,
+    .aviso {
       color: #aaa;
       font-size: 14px;
       line-height: 1.5;
@@ -151,25 +155,18 @@
       border-color: #cba54f;
     }
 
-    .pago {
-      display: none;
-      margin-top: 25px;
-      padding: 25px 20px;
-      border-radius: 18px;
-      background: #101010;
+    .medio {
       border: 1px solid #806426;
-    }
-
-    .pago h2 {
-      color: #e0ba60;
-      margin-bottom: 8px;
-    }
-
-    .pago .aviso {
-      color: #bbb;
-      line-height: 1.5;
-      font-size: 14px;
+      border-radius: 12px;
+      padding: 16px;
       margin-bottom: 20px;
+      background: #17140d;
+    }
+
+    .medio strong {
+      color: #e0ba60;
+      display: block;
+      margin-bottom: 5px;
     }
 
     .dato {
@@ -263,6 +260,7 @@
       id="nombre"
       type="text"
       placeholder="Ej: María González"
+      autocomplete="name"
     >
 
     <label>WHATSAPP</label>
@@ -270,11 +268,12 @@
       id="telefono"
       type="tel"
       placeholder="Ej: 2477123456"
+      autocomplete="tel"
     >
 
     <br><br>
 
-    <button onclick="continuarPago()">
+    <button id="btnContinuar" onclick="continuarPago()">
       CONTINUAR AL PAGO
     </button>
 
@@ -283,11 +282,16 @@
 
   <section class="pago" id="pago">
 
-    <h2>Datos para transferencia</h2>
+    <h2>Medio de pago</h2>
+
+    <div class="medio">
+      <strong>🏦 TRANSFERENCIA BANCARIA</strong>
+      Entrada general · $20.000
+    </div>
 
     <div class="aviso">
-      Transferí el importe de la entrada y luego enviá
-      el comprobante por WhatsApp.
+      Transferí el importe y luego enviá el comprobante por WhatsApp.
+      Tu entrada quedará confirmada una vez verificado el pago.
     </div>
 
     <div class="dato">
@@ -315,11 +319,11 @@
     </button>
 
     <div class="nota">
-      La entrada quedará confirmada una vez verificado el pago.
-      Luego recibirás tu QR individual de acceso.
+      Luego de verificar el pago recibirás tu QR individual de acceso.
     </div>
 
   </section>
+
 
   <footer>
     AURA PALACE · NOCHE RETRO 80 & 90
@@ -330,45 +334,87 @@
 
 <script>
 
-  function abrirCompra() {
-    document.getElementById("formulario").style.display = "block";
+const URL_RESERVAS =
+  "https://script.google.com/macros/s/AKfycbyzmeOxhVUQw956gvZjYv33RhkBVKVgvYIHsvW82mgHQ-DH7m58sp1icvRuFMMQADuLOA/exec";
 
-    document.getElementById("formulario").scrollIntoView({
-      behavior: "smooth"
-    });
+
+function abrirCompra() {
+
+  document.getElementById("formulario").style.display = "block";
+
+  document.getElementById("formulario").scrollIntoView({
+    behavior: "smooth"
+  });
+
+}
+
+
+async function continuarPago() {
+
+  const nombre =
+    document.getElementById("nombre").value.trim();
+
+  const telefono =
+    document.getElementById("telefono").value.trim();
+
+  if (!nombre || !telefono) {
+    alert("Completá tu nombre y WhatsApp para continuar.");
+    return;
   }
 
+  const boton =
+    document.getElementById("btnContinuar");
 
-  function continuarPago() {
+  boton.disabled = true;
+  boton.innerText = "REGISTRANDO RESERVA...";
 
-    const nombre =
-      document.getElementById("nombre").value.trim();
+  try {
 
-    const telefono =
-      document.getElementById("telefono").value.trim();
+    const datos = new URLSearchParams();
 
-    if (!nombre || !telefono) {
-      alert("Completá tu nombre y WhatsApp para continuar.");
-      return;
-    }
+    datos.append("nombre", nombre);
+    datos.append("telefono", telefono);
+    datos.append("medioPago", "TRANSFERENCIA");
+
+    await fetch(URL_RESERVAS, {
+      method: "POST",
+      mode: "no-cors",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
+      body: datos.toString()
+    });
 
     document.getElementById("pago").style.display = "block";
 
     document.getElementById("pago").scrollIntoView({
       behavior: "smooth"
     });
+
+    boton.innerText = "RESERVA REGISTRADA ✓";
+
+  } catch (error) {
+
+    boton.disabled = false;
+    boton.innerText = "CONTINUAR AL PAGO";
+
+    alert(
+      "No pudimos registrar la reserva. Intentá nuevamente."
+    );
   }
 
+}
 
-  function enviarComprobante() {
 
-    const nombre =
-      document.getElementById("nombre").value.trim();
+function enviarComprobante() {
 
-    const telefono =
-      document.getElementById("telefono").value.trim();
+  const nombre =
+    document.getElementById("nombre").value.trim();
 
-    const mensaje =
+  const telefono =
+    document.getElementById("telefono").value.trim();
+
+  const mensaje =
 `Hola, realicé la transferencia de $20.000 para Noche Retro en Aura Palace.
 
 Nombre: ${nombre}
@@ -376,12 +422,13 @@ WhatsApp: ${telefono}
 
 Adjunto el comprobante de pago.`;
 
-    const url =
-      "https://wa.me/5492477228663?text=" +
-      encodeURIComponent(mensaje);
+  const url =
+    "https://wa.me/5492477228663?text=" +
+    encodeURIComponent(mensaje);
 
-    window.open(url, "_blank");
-  }
+  window.open(url, "_blank");
+
+}
 
 </script>
 
