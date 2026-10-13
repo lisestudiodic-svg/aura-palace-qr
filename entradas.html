@@ -1,216 +1,575 @@
-function registrarReserva(datos) {
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  const ss = SpreadsheetApp.openById(ID_PLANILLA);
-  const hoja = ss.getSheetByName('RESERVAS');
+  <title>Noche Retro 80 & 90 | Aura Palace</title>
 
-  if (!hoja) {
-    throw new Error('No existe la hoja RESERVAS');
-  }
+  <!-- VISTA PREVIA WHATSAPP / REDES -->
+  <meta property="og:title" content="Noche Retro 80 & 90 | Aura Palace">
+  <meta property="og:description" content="Sábado 14 de noviembre · 22 hs · Aura Palace · Entradas $20.000">
+  <meta property="og:image" content="https://lisestudiodic-svg.github.io/aura-palace-qr/miniatura.jpg">
+  <meta property="og:url" content="https://lisestudiodic-svg.github.io/aura-palace-qr/entradas.html">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
 
-  const nombre = String(datos.nombre || '').trim();
-  const telefono = String(datos.telefono || '').trim();
-  const medioPago = String(datos.medioPago || 'TRANSFERENCIA').trim();
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-  if (!nombre || !telefono) {
-    throw new Error('Faltan datos de la reserva');
-  }
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background:
+        radial-gradient(circle at top, #33240d 0%, #111 30%, #050505 70%);
+      color: white;
+      min-height: 100vh;
+    }
 
-  const lock = LockService.getScriptLock();
-  lock.waitLock(10000);
+    .container {
+      width: 92%;
+      max-width: 520px;
+      margin: auto;
+      padding: 45px 0 60px;
+    }
 
-  try {
+    .hero {
+      text-align: center;
+      padding: 35px 20px;
+      border: 1px solid #8d6b28;
+      border-radius: 22px;
+      background: rgba(0,0,0,.65);
+      box-shadow: 0 0 40px rgba(190,145,55,.12);
+    }
 
-    hoja.appendRow([
-      new Date(),
-      nombre,
-      telefono,
-      medioPago,
-      'PENDIENTE',
-      ''
-    ]);
+    .small {
+      color: #c7a55a;
+      font-size: 13px;
+      letter-spacing: 4px;
+      margin-bottom: 15px;
+    }
 
-    return {
-      ok: true,
-      mensaje: 'Reserva registrada'
-    };
+    h1 {
+      font-size: 42px;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
 
-  } finally {
-    lock.releaseLock();
-  }
+    h1 span {
+      color: #d4af5a;
+    }
+
+    .subtitle {
+      color: #ddd;
+      font-size: 17px;
+      margin-bottom: 28px;
+    }
+
+    .date {
+      border-top: 1px solid #473819;
+      border-bottom: 1px solid #473819;
+      padding: 18px 0;
+      margin-bottom: 25px;
+      line-height: 1.7;
+    }
+
+    .date strong {
+      color: #e0bd69;
+    }
+
+    .show {
+      margin: 25px 0;
+      line-height: 1.8;
+      color: #ddd;
+    }
+
+    .price-label {
+      font-size: 12px;
+      letter-spacing: 3px;
+      color: #aaa;
+      margin-top: 25px;
+    }
+
+    .price {
+      font-size: 42px;
+      font-weight: 800;
+      color: #e2bc62;
+      margin: 5px 0 20px;
+    }
+
+    button, .boton-mp {
+      width: 100%;
+      border: 0;
+      border-radius: 12px;
+      padding: 18px 15px;
+      font-size: 16px;
+      font-weight: 800;
+      cursor: pointer;
+      text-decoration: none;
+      display: block;
+      text-align: center;
+    }
+
+    .boton-principal {
+      background: linear-gradient(135deg,#d6b25e,#96701f);
+      color: #111;
+    }
+
+    button:disabled {
+      opacity: .55;
+      cursor: wait;
+    }
+
+    .formulario,
+    .pago {
+      display: none;
+      margin-top: 25px;
+      padding: 25px 20px;
+      background: #101010;
+      border: 1px solid #55431e;
+      border-radius: 18px;
+    }
+
+    .formulario h2,
+    .pago h2 {
+      color: #e0ba60;
+      margin-bottom: 8px;
+    }
+
+    .formulario p,
+    .aviso {
+      color: #aaa;
+      font-size: 14px;
+      line-height: 1.5;
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin: 15px 0 7px;
+      color: #d5b66e;
+      font-size: 13px;
+    }
+
+    input {
+      width: 100%;
+      padding: 15px;
+      border-radius: 9px;
+      border: 1px solid #444;
+      background: #090909;
+      color: white;
+      font-size: 16px;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: #cba54f;
+    }
+
+    .opciones {
+      display: grid;
+      gap: 14px;
+      margin-top: 20px;
+    }
+
+    .opcion {
+      width: 100%;
+      padding: 18px;
+      border-radius: 14px;
+      border: 1px solid #806426;
+      background: #17140d;
+      color: white;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .opcion strong {
+      display: block;
+      color: #e0ba60;
+      font-size: 17px;
+      margin-bottom: 5px;
+    }
+
+    .opcion span {
+      color: #aaa;
+      font-size: 13px;
+    }
+
+    .detalle-pago {
+      display: none;
+      margin-top: 22px;
+      padding-top: 20px;
+      border-top: 1px solid #3d321a;
+    }
+
+    .dato {
+      padding: 13px 0;
+      border-bottom: 1px solid #292929;
+    }
+
+    .dato span {
+      display: block;
+      color: #888;
+      font-size: 11px;
+      letter-spacing: 1px;
+      margin-bottom: 5px;
+    }
+
+    .dato strong {
+      font-size: 18px;
+    }
+
+    .whatsapp {
+      margin-top: 22px;
+      background: #25D366;
+      color: #06190d;
+    }
+
+    .boton-mp {
+      margin-top: 20px;
+      background: #009ee3;
+      color: white;
+    }
+
+    .nota {
+      text-align: center;
+      color: #888;
+      font-size: 12px;
+      line-height: 1.5;
+      margin-top: 18px;
+    }
+
+    footer {
+      text-align: center;
+      color: #555;
+      font-size: 11px;
+      margin-top: 35px;
+      letter-spacing: 1px;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <section class="hero">
+
+    <div class="small">AURA PALACE PRESENTA</div>
+
+    <h1>NOCHE <span>RETRO</span></h1>
+
+    <div class="subtitle">
+      Los grandes clásicos de los 80 & 90
+    </div>
+
+    <div class="date">
+      <strong>SÁBADO 14 DE NOVIEMBRE</strong><br>
+      22:00 HS<br>
+      Aura Palace<br>
+      Intendente Biscayart 571 · Pergamino
+    </div>
+
+    <div class="show">
+      🎷 Cristian Berrondo · Saxo en vivo<br>
+      🎹 Fernando Vila · Piano en vivo<br><br>
+      Música · Videoclips · Barra · Gastronomía
+    </div>
+
+    <div class="price-label">ENTRADA GENERAL</div>
+    <div class="price">$20.000</div>
+
+    <button class="boton-principal" onclick="abrirCompra()">
+      COMPRAR ENTRADA
+    </button>
+
+  </section>
+
+
+  <section class="formulario" id="formulario">
+
+    <h2>Reservá tu entrada</h2>
+
+    <p>Completá tus datos para continuar.</p>
+
+    <label>NOMBRE Y APELLIDO</label>
+    <input
+      id="nombre"
+      type="text"
+      placeholder="Ej: María González"
+      autocomplete="name"
+    >
+
+    <label>WHATSAPP</label>
+    <input
+      id="telefono"
+      type="tel"
+      placeholder="Ej: 2477123456"
+      autocomplete="tel"
+    >
+
+    <br><br>
+
+    <button class="boton-principal" onclick="mostrarMedios()">
+      CONTINUAR AL PAGO
+    </button>
+
+  </section>
+
+
+  <section class="pago" id="pago">
+
+    <h2>Elegí cómo pagar</h2>
+
+    <div class="aviso">
+      Entrada general · <strong>$20.000</strong>
+    </div>
+
+    <div class="opciones">
+
+      <button class="opcion" onclick="elegirTransferencia()">
+        <strong>🏦 TRANSFERENCIA BANCARIA</strong>
+        <span>Transferí a Banco Galicia y enviá el comprobante.</span>
+      </button>
+
+      <button class="opcion" onclick="elegirMercadoPago()">
+        <strong>💳 MERCADO PAGO</strong>
+        <span>Pagá online desde Mercado Pago.</span>
+      </button>
+
+    </div>
+
+
+    <div class="detalle-pago" id="transferencia">
+
+      <h2>Datos para transferencia</h2>
+
+      <div class="dato">
+        <span>IMPORTE</span>
+        <strong>$20.000</strong>
+      </div>
+
+      <div class="dato">
+        <span>BANCO</span>
+        <strong>Galicia</strong>
+      </div>
+
+      <div class="dato">
+        <span>ALIAS</span>
+        <strong>CRISTIAN.SAXO</strong>
+      </div>
+
+      <div class="dato">
+        <span>TITULAR</span>
+        <strong>Ernesto Cristian Berrondo</strong>
+      </div>
+
+      <button class="whatsapp" onclick="enviarComprobante()">
+        ENVIAR COMPROBANTE POR WHATSAPP
+      </button>
+
+      <div class="nota">
+        La entrada quedará confirmada después de verificar la transferencia.
+      </div>
+
+    </div>
+
+
+    <div class="detalle-pago" id="mercadopago">
+
+      <h2>Mercado Pago</h2>
+
+      <div class="aviso">
+        Vas a continuar a Mercado Pago para realizar el pago de tu entrada.
+      </div>
+
+      <div class="dato">
+        <span>TOTAL</span>
+        <strong>$20.000</strong>
+      </div>
+
+      <button class="boton-mp" onclick="pagarMercadoPago()">
+        PAGAR $20.000 CON MERCADO PAGO
+      </button>
+
+      <div class="nota">
+        Después del pago, conservá el comprobante hasta recibir tu QR de acceso.
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <footer>
+    AURA PALACE · NOCHE RETRO 80 & 90
+  </footer>
+
+</div>
+
+
+<script>
+
+const URL_RESERVAS =
+"https://script.google.com/macros/s/AKfycbyzmeOxhVUQw956gvZjYv33RhkBVKVgvYIHsvW82mgHQ-DH7m58sp1icvRuFMMQADuLOA/exec";
+
+const LINK_MERCADO_PAGO =
+"https://mpago.la/1i7ot5T";
+
+let reservaRegistrada = false;
+let medioRegistrado = "";
+
+
+function abrirCompra() {
+
+  document.getElementById("formulario").style.display = "block";
+
+  document.getElementById("formulario").scrollIntoView({
+    behavior: "smooth"
+  });
+
 }
 
 
-function doPost(e) {
+function datosValidos() {
+
+  const nombre = document.getElementById("nombre").value.trim();
+  const telefono = document.getElementById("telefono").value.trim();
+
+  if (!nombre || !telefono) {
+    alert("Completá tu nombre y WhatsApp para continuar.");
+    return false;
+  }
+
+  return true;
+}
+
+
+function mostrarMedios() {
+
+  if (!datosValidos()) return;
+
+  document.getElementById("pago").style.display = "block";
+
+  document.getElementById("pago").scrollIntoView({
+    behavior: "smooth"
+  });
+
+}
+
+
+async function registrarReserva(medioPago) {
+
+  if (!datosValidos()) return false;
+
+  /*
+    Evita registrar dos veces si la persona toca
+    nuevamente el mismo medio de pago.
+  */
+  if (reservaRegistrada && medioRegistrado === medioPago) {
+    return true;
+  }
+
+  const nombre = document.getElementById("nombre").value.trim();
+  const telefono = document.getElementById("telefono").value.trim();
+
+  const datos = new URLSearchParams();
+
+  datos.append("nombre", nombre);
+  datos.append("telefono", telefono);
+  datos.append("medioPago", medioPago);
 
   try {
 
-    const datos = {
-      nombre: e.parameter.nombre || '',
-      telefono: e.parameter.telefono || '',
-      medioPago: e.parameter.medioPago || 'TRANSFERENCIA'
-    };
+    await fetch(URL_RESERVAS, {
+      method: "POST",
+      mode: "no-cors",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
+      body: datos.toString()
+    });
 
-    const resultado = registrarReserva(datos);
+    reservaRegistrada = true;
+    medioRegistrado = medioPago;
 
-    return ContentService
-      .createTextOutput(JSON.stringify(resultado))
-      .setMimeType(ContentService.MimeType.JSON);
+    return true;
 
   } catch (error) {
 
-    return ContentService
-      .createTextOutput(JSON.stringify({
-        ok: false,
-        mensaje: error.message
-      }))
-      .setMimeType(ContentService.MimeType.JSON);
+    alert("No pudimos registrar la reserva. Intentá nuevamente.");
+    return false;
   }
+
 }
 
 
-/*
-  ASIGNACIÓN AUTOMÁTICA DE ENTRADAS
+async function elegirTransferencia() {
 
-  Cuando en RESERVAS cambiamos ESTADO a PAGADO:
-  - busca la primera entrada libre entre 1 y 200
-  - coloca comprador y teléfono en ENTRADAS
-  - marca PAGO = PAGADO
-  - escribe el número en ENTRADA ASIGNADA
-*/
-function onEdit(e) {
+  document.getElementById("mercadopago").style.display = "none";
 
-  if (!e || !e.range) return;
+  const ok = await registrarReserva("TRANSFERENCIA");
 
-  const hoja = e.range.getSheet();
+  if (!ok) return;
 
-  // Solo trabaja dentro de RESERVAS
-  if (hoja.getName() !== 'RESERVAS') return;
+  document.getElementById("transferencia").style.display = "block";
 
-  // Columna E = ESTADO
-  if (e.range.getColumn() !== 5) return;
+  document.getElementById("transferencia").scrollIntoView({
+    behavior: "smooth"
+  });
 
-  // Ignora encabezado
-  if (e.range.getRow() < 2) return;
-
-  const estado = String(e.range.getValue())
-    .trim()
-    .toUpperCase();
-
-  if (estado !== 'PAGADO') return;
-
-  const filaReserva = e.range.getRow();
-
-  asignarEntradaPagada_(filaReserva);
 }
 
 
-function asignarEntradaPagada_(filaReserva) {
+async function elegirMercadoPago() {
 
-  const lock = LockService.getDocumentLock();
-  lock.waitLock(10000);
+  document.getElementById("transferencia").style.display = "none";
 
-  try {
+  const ok = await registrarReserva("MERCADO PAGO");
 
-    const ss = SpreadsheetApp.openById(ID_PLANILLA);
+  if (!ok) return;
 
-    const reservas = ss.getSheetByName('RESERVAS');
-    const entradas = ss.getSheetByName('ENTRADAS');
+  document.getElementById("mercadopago").style.display = "block";
 
-    if (!reservas || !entradas) {
-      throw new Error('No se encontraron RESERVAS o ENTRADAS');
-    }
+  document.getElementById("mercadopago").scrollIntoView({
+    behavior: "smooth"
+  });
 
-    // Si ya tiene entrada asignada, no hace nada.
-    const yaAsignada = reservas
-      .getRange(filaReserva, 6)
-      .getValue();
-
-    if (yaAsignada !== '') {
-      return;
-    }
-
-    const nombre = String(
-      reservas.getRange(filaReserva, 2).getValue()
-    ).trim();
-
-    const telefono = String(
-      reservas.getRange(filaReserva, 3).getValue()
-    ).trim();
-
-    if (!nombre || !telefono) {
-      throw new Error('La reserva no tiene nombre o WhatsApp');
-    }
-
-    /*
-      ENTRADAS:
-      filas 2 a 201 = entradas 1 a 200
-
-      A = NÚMERO
-      B = CÓDIGO ÚNICO
-      C = COMPRADOR
-      D = TELÉFONO
-      E = PAGO
-      F = ESTADO DE INGRESO
-      G = FECHA/HORA
-    */
-    const datosEntradas =
-      entradas.getRange(2, 1, 200, 7).getValues();
-
-    let filaEntrada = -1;
-    let numeroEntrada = '';
-
-    for (let i = 0; i < datosEntradas.length; i++) {
-
-      const comprador = String(
-        datosEntradas[i][2] || ''
-      ).trim();
-
-      const pago = String(
-        datosEntradas[i][4] || ''
-      ).trim().toUpperCase();
-
-      /*
-        Consideramos libre una entrada que todavía
-        no tiene comprador y no está marcada PAGADO.
-      */
-      if (comprador === '' && pago !== 'PAGADO') {
-
-        filaEntrada = i + 2;
-        numeroEntrada = datosEntradas[i][0];
-
-        break;
-      }
-    }
-
-    if (filaEntrada === -1) {
-
-      reservas
-        .getRange(filaReserva, 5)
-        .setValue('SIN ENTRADAS');
-
-      throw new Error('No quedan entradas disponibles');
-    }
-
-    // Completa la entrada seleccionada.
-    entradas
-      .getRange(filaEntrada, 3)
-      .setValue(nombre);
-
-    entradas
-      .getRange(filaEntrada, 4)
-      .setValue(telefono);
-
-    entradas
-      .getRange(filaEntrada, 5)
-      .setValue('PAGADO');
-
-    // Guarda en RESERVAS qué entrada pertenece al comprador.
-    reservas
-      .getRange(filaReserva, 6)
-      .setValue(numeroEntrada);
-
-  } finally {
-
-    lock.releaseLock();
-  }
 }
+
+
+function enviarComprobante() {
+
+  const nombre = document.getElementById("nombre").value.trim();
+  const telefono = document.getElementById("telefono").value.trim();
+
+  const mensaje =
+`Hola, realicé la transferencia de $20.000 para Noche Retro en Aura Palace.
+
+Nombre: ${nombre}
+WhatsApp: ${telefono}
+
+Adjunto el comprobante de pago.`;
+
+  const url =
+    "https://wa.me/5492477228663?text=" +
+    encodeURIComponent(mensaje);
+
+  window.open(url, "_blank");
+
+}
+
+
+function pagarMercadoPago() {
+
+  window.open(LINK_MERCADO_PAGO, "_blank");
+
+}
+
+</script>
+
+</body>
+</html>
