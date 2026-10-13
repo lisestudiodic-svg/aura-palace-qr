@@ -2,9 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-
-  <meta name="viewport"
-        content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
   <title>Aura Palace - Control QR</title>
 
@@ -12,9 +10,7 @@
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 
   <style>
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
@@ -53,7 +49,6 @@
       padding: 22px 15px;
       border-radius: 15px;
       background: #293241;
-
       display: flex;
       flex-direction: column;
       justify-content: center;
@@ -67,17 +62,19 @@
     }
 
     #detalle {
-      white-space: pre-line;
+      white-space: pre-wrap;
       margin-top: 12px;
-      font-size: 18px;
+      font-size: 16px;
       line-height: 1.4;
       overflow-wrap: anywhere;
+      width: 100%;
     }
 
     button {
       width: 100%;
       max-width: 430px;
       padding: 17px;
+      margin: 6px auto;
       border: 0;
       border-radius: 10px;
       background: #d7b878;
@@ -87,266 +84,160 @@
       cursor: pointer;
     }
 
-    button:disabled {
-      opacity: .6;
+    #probar {
+      display: none;
+      background: white;
     }
 
     #sesion {
-      font-size: 13px;
-      opacity: .7;
-      margin-top: 10px;
+      font-size: 14px;
+      opacity: .8;
+      margin: 10px 0;
     }
   </style>
 </head>
 
 <body>
 
-  <h1>AURA PALACE</h1>
-  <h2>CONTROL DE ENTRADAS QR</h2>
+<h1>AURA PALACE</h1>
+<h2>CONTROL DE ENTRADAS QR</h2>
 
-  <button id="iniciar" onclick="iniciarControl()">
-    INICIAR CONTROL
-  </button>
+<button id="iniciar" onclick="iniciarControl()">
+  INICIAR CONTROL
+</button>
 
-  <div id="sesion">
-    Acceso protegido con Google
-  </div>
+<button id="probar" onclick="probarConexion()">
+  PROBAR CONEXIÓN
+</button>
 
-  <div id="reader"></div>
+<div id="sesion">Acceso protegido con Google</div>
 
-  <div id="resultado">
-    <div id="estado">
-      Control detenido
-    </div>
+<div id="reader"></div>
 
-    <div id="detalle">
-      Tocá INICIAR CONTROL
-    </div>
-  </div>
-
+<div id="resultado">
+  <div id="estado">Control detenido</div>
+  <div id="detalle">Tocá INICIAR CONTROL</div>
+</div>
 
 <script>
 
 const CLIENT_ID =
-  "649138944017-rretdreji3l8u53bh6mo2q49sto1n058.apps.googleusercontent.com";
+"649138944017-rretdreji3l8u53bh6mo2q49sto1n058.apps.googleusercontent.com";
 
 const SPREADSHEET_ID =
-  "1FBUPZIg_rd_vpGvQ2m5EKg3jv-8Q6B7oSSmIlWdDE_o";
+"1FBUPZIg_rd_vpGvQ2m5EKg3jv-8Q6B7oSSmIlWdDE_o";
 
 const SHEET_NAME = "ENTRADAS";
 
 let accessToken = "";
-let tokenClient = null;
 let scanner = null;
 let procesando = false;
-
 let ultimoCodigo = "";
 let ultimoMomento = 0;
 
 
-/* ============================
-   PANTALLA
-============================ */
+/* PANTALLA */
 
 function mostrar(titulo, detalle, color) {
-
-  document.getElementById("estado").textContent =
-    titulo;
-
-  document.getElementById("detalle").textContent =
-    detalle || "";
-
-  document.getElementById("resultado").style.background =
-    color;
+  document.getElementById("estado").textContent = titulo;
+  document.getElementById("detalle").textContent = detalle || "";
+  document.getElementById("resultado").style.background = color;
 }
 
 
-/* ============================
-   SONIDOS
-============================ */
+/* SONIDO */
 
 function tono(freq, duracion) {
-
   try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    const audio = new AudioCtx();
+    const osc = audio.createOscillator();
+    const gain = audio.createGain();
 
-    const AudioCtx =
-      window.AudioContext ||
-      window.webkitAudioContext;
-
-    const audio =
-      new AudioCtx();
-
-    const osc =
-      audio.createOscillator();
-
-    const gain =
-      audio.createGain();
-
-    osc.type = "sine";
-
-    osc.frequency.value =
-      freq;
-
-    gain.gain.value =
-      0.18;
+    osc.frequency.value = freq;
+    gain.gain.value = 0.18;
 
     osc.connect(gain);
-
-    gain.connect(
-      audio.destination
-    );
+    gain.connect(audio.destination);
 
     osc.start();
+    osc.stop(audio.currentTime + duracion);
 
-    osc.stop(
-      audio.currentTime +
-      duracion
-    );
-
-    osc.onended =
-      () => audio.close();
-
-  } catch (error) {
-
-    console.log(error);
-  }
+    osc.onended = () => audio.close();
+  } catch(e) {}
 }
-
 
 function sonidoValido() {
-
   tono(880, .12);
-
-  setTimeout(
-    () => tono(1250, .18),
-    140
-  );
+  setTimeout(() => tono(1250, .18), 140);
 }
-
 
 function sonidoUtilizada() {
-
   tono(520, .20);
-
-  setTimeout(
-    () => tono(520, .20),
-    260
-  );
+  setTimeout(() => tono(520, .20), 260);
 }
 
-
-function sonidoRechazado() {
-
+function sonidoError() {
   tono(260, .40);
 }
 
 
-/* ============================
-   VIBRACIÓN
-============================ */
-
-function vibrarValido() {
-
-  if (navigator.vibrate) {
-    navigator.vibrate(180);
-  }
-}
-
-
-function vibrarUtilizada() {
-
-  if (navigator.vibrate) {
-    navigator.vibrate(
-      [250, 120, 250]
-    );
-  }
-}
-
-
-function vibrarRechazado() {
-
-  if (navigator.vibrate) {
-    navigator.vibrate(
-      [400, 150, 400]
-    );
-  }
-}
-
-
-/* ============================
-   GOOGLE
-============================ */
+/* GOOGLE LOGIN */
 
 function iniciarControl() {
 
-  if (
-    !window.google ||
-    !google.accounts
-  ) {
-
+  if (!window.google || !google.accounts) {
     mostrar(
       "ERROR",
-      "Google todavía no terminó de cargar. Intentá nuevamente.",
+      "Google todavía no terminó de cargar.",
       "#b91c1c"
     );
-
     return;
   }
 
+  const tokenClient =
+    google.accounts.oauth2.initTokenClient({
 
-  document
-    .getElementById("iniciar")
-    .disabled = true;
+      client_id: CLIENT_ID,
 
+      scope:
+        "https://www.googleapis.com/auth/spreadsheets",
 
-  tokenClient =
-    google.accounts.oauth2
-      .initTokenClient({
+      callback: async (respuesta) => {
 
-        client_id: CLIENT_ID,
+        if (respuesta.error) {
+          mostrar(
+            "ERROR DE ACCESO",
+            JSON.stringify(respuesta),
+            "#b91c1c"
+          );
+          return;
+        }
 
-        scope:
-          "https://www.googleapis.com/auth/spreadsheets",
+        accessToken = respuesta.access_token;
 
-        callback:
-          async function(response) {
+        document.getElementById("sesion").textContent =
+          "Google conectado ✓";
 
-            if (response.error) {
+        document.getElementById("iniciar").style.display =
+          "none";
 
-              document
-                .getElementById("iniciar")
-                .disabled = false;
+        document.getElementById("probar").style.display =
+          "block";
 
-              mostrar(
-                "ACCESO CANCELADO",
-                response.error,
-                "#b91c1c"
-              );
+        /*
+          IMPORTANTE:
+          primero NO abrimos la cámara.
+          Primero probamos Google Sheets.
+        */
 
-              return;
-            }
-
-
-            accessToken =
-              response.access_token;
-
-
-            document
-              .getElementById("sesion")
-              .textContent =
-              "Google conectado ✓";
-
-
-            document
-              .getElementById("iniciar")
-              .style.display =
-              "none";
-
-
-            await iniciarCamara();
-          }
-      });
-
+        mostrar(
+          "GOOGLE CONECTADO",
+          "Ahora tocá PROBAR CONEXIÓN",
+          "#293241"
+        );
+      }
+    });
 
   tokenClient.requestAccessToken({
     prompt: ""
@@ -354,224 +245,196 @@ function iniciarControl() {
 }
 
 
-/* ============================
-   GOOGLE SHEETS
-============================ */
+/* PRUEBA SEGURA DE GOOGLE SHEETS */
 
-function apiBase() {
+async function probarConexion() {
 
-  return (
-    "https:" +
-    "//sheets.googleapis.com/v4/spreadsheets/"
+  mostrar(
+    "PROBANDO...",
+    "Consultando Google Sheets",
+    "#334155"
   );
+
+  try {
+
+    const rango =
+      encodeURIComponent(
+        SHEET_NAME + "!A1:G3"
+      );
+
+    const url =
+      "https://sheets.googleapis.com/v4/spreadsheets/" +
+      SPREADSHEET_ID +
+      "/values/" +
+      rango;
+
+    const respuesta =
+      await fetch(url, {
+        method: "GET",
+        headers: {
+          Authorization:
+            "Bearer " + accessToken
+        }
+      });
+
+    const texto =
+      await respuesta.text();
+
+    if (!respuesta.ok) {
+
+      mostrar(
+        "ERROR DE GOOGLE",
+        "CÓDIGO HTTP: " +
+        respuesta.status +
+        "\n\nRESPUESTA:\n" +
+        texto,
+        "#b91c1c"
+      );
+
+      return;
+    }
+
+    mostrar(
+      "✓ CONEXIÓN CORRECTA",
+      "Google Sheets respondió correctamente.\n\nNo se modificó ninguna entrada.",
+      "#16803c"
+    );
+
+    document.getElementById("probar").style.display =
+      "none";
+
+    await iniciarCamara();
+
+  } catch(error) {
+
+    mostrar(
+      "ERROR TÉCNICO",
+      String(error),
+      "#b91c1c"
+    );
+  }
 }
 
+
+/* LEER ENTRADAS */
 
 async function leerEntradas() {
 
   const rango =
     encodeURIComponent(
-      SHEET_NAME +
-      "!A2:G"
+      SHEET_NAME + "!A2:G"
     );
 
-
   const url =
-    apiBase() +
+    "https://sheets.googleapis.com/v4/spreadsheets/" +
     SPREADSHEET_ID +
     "/values/" +
     rango;
 
-
   const respuesta =
-    await fetch(
-      url,
-      {
-        headers: {
-          Authorization:
-            "Bearer " +
-            accessToken
-        }
+    await fetch(url, {
+      headers: {
+        Authorization:
+          "Bearer " + accessToken
       }
-    );
+    });
 
-
-  if (
-    respuesta.status === 401
-  ) {
-
-    throw new Error(
-      "SESIÓN VENCIDA"
-    );
-  }
-
+  const texto =
+    await respuesta.text();
 
   if (!respuesta.ok) {
-
-    let texto = "";
-
-    try {
-
-      texto =
-        await respuesta.text();
-
-    } catch (e) {
-
-      texto =
-        "No se pudo leer la respuesta de Google";
-    }
-
-
     throw new Error(
-      "Google Sheets respondió " +
+      "HTTP " +
       respuesta.status +
-      ": " +
+      " - " +
       texto
     );
   }
 
-
   const datos =
-    await respuesta.json();
-
+    JSON.parse(texto);
 
   return datos.values || [];
 }
 
 
-/* ============================
-   REGISTRAR INGRESO
-============================ */
+/* REGISTRAR */
 
-async function registrarIngreso(
-  numeroFila
-) {
+async function registrarIngreso(fila) {
 
   const rango =
     encodeURIComponent(
       SHEET_NAME +
       "!F" +
-      numeroFila +
+      fila +
       ":G" +
-      numeroFila
+      fila
     );
 
-
-  const fecha =
-    new Date()
-      .toISOString();
-
-
   const url =
-    apiBase() +
+    "https://sheets.googleapis.com/v4/spreadsheets/" +
     SPREADSHEET_ID +
     "/values/" +
     rango +
     "?valueInputOption=USER_ENTERED";
 
-
   const respuesta =
-    await fetch(
-      url,
-      {
-        method: "PUT",
+    await fetch(url, {
 
-        headers: {
+      method: "PUT",
 
-          Authorization:
-            "Bearer " +
-            accessToken,
+      headers: {
+        Authorization:
+          "Bearer " + accessToken,
 
-          "Content-Type":
-            "application/json"
-        },
+        "Content-Type":
+          "application/json"
+      },
 
-        body:
-          JSON.stringify({
+      body: JSON.stringify({
+        values: [[
+          "INGRESO REGISTRADO",
+          new Date().toISOString()
+        ]]
+      })
+    });
 
-            values: [
-              [
-                "INGRESO REGISTRADO",
-                fecha
-              ]
-            ]
-
-          })
-      }
-    );
-
+  const texto =
+    await respuesta.text();
 
   if (!respuesta.ok) {
-
-    let texto = "";
-
-    try {
-
-      texto =
-        await respuesta.text();
-
-    } catch (e) {
-
-      texto =
-        "Sin detalle";
-    }
-
-
     throw new Error(
-      "No se pudo registrar. Google respondió " +
+      "HTTP " +
       respuesta.status +
-      ": " +
+      " - " +
       texto
     );
   }
 }
 
 
-/* ============================
-   VALIDAR ENTRADA
-============================ */
+/* VALIDACIÓN */
 
-async function validarEntrada(
-  codigo
-) {
+async function validarEntrada(codigo) {
 
   codigo =
-    String(
-      codigo || ""
-    ).trim();
+    String(codigo || "").trim();
 
-
-  if (
-    !codigo ||
-    procesando
-  ) {
-
+  if (!codigo || procesando)
     return;
-  }
 
-
-  const ahora =
-    Date.now();
-
+  const ahora = Date.now();
 
   if (
     codigo === ultimoCodigo &&
     ahora - ultimoMomento < 3000
   ) {
-
     return;
   }
 
-
-  ultimoCodigo =
-    codigo;
-
-  ultimoMomento =
-    ahora;
-
-  procesando =
-    true;
-
+  ultimoCodigo = codigo;
+  ultimoMomento = ahora;
+  procesando = true;
 
   mostrar(
     "VERIFICANDO...",
@@ -579,23 +442,16 @@ async function validarEntrada(
     "#334155"
   );
 
-
   try {
 
     const entradas =
       await leerEntradas();
 
-
     const indice =
       entradas.findIndex(
         fila =>
-          String(
-            fila[1] || ""
-          ).trim() === codigo
+          String(fila[1] || "").trim() === codigo
       );
-
-
-    /* ENTRADA INEXISTENTE */
 
     if (indice === -1) {
 
@@ -605,9 +461,10 @@ async function validarEntrada(
         "#b91c1c"
       );
 
-      sonidoRechazado();
+      sonidoError();
 
-      vibrarRechazado();
+      if (navigator.vibrate)
+        navigator.vibrate([400,150,400]);
 
       return;
     }
@@ -616,36 +473,22 @@ async function validarEntrada(
     const entrada =
       entradas[indice];
 
-
     const numero =
-      String(
-        entrada[0] || ""
-      );
-
+      String(entrada[0] || "");
 
     const comprador =
-      String(
-        entrada[2] || ""
-      ).trim();
-
+      String(entrada[2] || "").trim();
 
     const pago =
-      String(
-        entrada[4] || ""
-      )
+      String(entrada[4] || "")
       .trim()
       .toUpperCase();
-
 
     const ingreso =
-      String(
-        entrada[5] || ""
-      )
+      String(entrada[5] || "")
       .trim()
       .toUpperCase();
 
-
-    /* YA UTILIZADA */
 
     if (
       ingreso ===
@@ -654,206 +497,107 @@ async function validarEntrada(
 
       mostrar(
         "⚠ ENTRADA YA UTILIZADA",
-
         "Entrada N.º " +
         numero +
-
-        (
-          comprador
-          ? "\n" + comprador
-          : ""
-        ) +
-
+        (comprador ? "\n" + comprador : "") +
         "\nNO PERMITIR INGRESO",
-
         "#a66a08"
       );
 
-
       sonidoUtilizada();
 
-      vibrarUtilizada();
+      if (navigator.vibrate)
+        navigator.vibrate([250,120,250]);
 
       return;
     }
 
 
-    /* NO PAGADA */
-
-    if (
-      pago !== "PAGADO"
-    ) {
+    if (pago !== "PAGADO") {
 
       mostrar(
         "✕ ENTRADA NO HABILITADA",
-
         "Entrada N.º " +
         numero +
-
-        (
-          comprador
-          ? "\n" + comprador
-          : ""
-        ) +
-
+        (comprador ? "\n" + comprador : "") +
         "\nPago no registrado",
-
         "#b91c1c"
       );
 
-
-      sonidoRechazado();
-
-      vibrarRechazado();
+      sonidoError();
 
       return;
     }
 
 
-    /* REGISTRAR */
-
     const numeroFila =
       indice + 2;
-
 
     await registrarIngreso(
       numeroFila
     );
 
 
-    /* AUTORIZADA */
-
     mostrar(
       "✓ INGRESO AUTORIZADO",
-
       "Entrada N.º " +
       numero +
-
-      (
-        comprador
-        ? "\n" + comprador
-        : ""
-      ) +
-
+      (comprador ? "\n" + comprador : "") +
       "\nIngreso registrado",
-
       "#16803c"
     );
 
-
     sonidoValido();
 
-    vibrarValido();
+    if (navigator.vibrate)
+      navigator.vibrate(180);
 
 
-  } catch (error) {
+  } catch(error) {
 
-    console.error(error);
+    mostrar(
+      "✕ ERROR DE CONEXIÓN",
+      "ERROR REAL:\n" +
+      error.message,
+      "#b91c1c"
+    );
 
-
-    if (
-      error.message ===
-      "SESIÓN VENCIDA"
-    ) {
-
-      mostrar(
-        "SESIÓN VENCIDA",
-        "Volvé a iniciar el control",
-        "#a66a08"
-      );
-
-
-      document
-        .getElementById("iniciar")
-        .style.display =
-        "block";
-
-
-      document
-        .getElementById("iniciar")
-        .disabled =
-        false;
-
-
-      accessToken = "";
-
-    } else {
-
-      /* IMPORTANTE:
-         AHORA MOSTRAMOS
-         EL ERROR REAL
-         EN EL CELULAR
-      */
-
-      mostrar(
-        "✕ ERROR DE CONEXIÓN",
-
-        "ERROR REAL:\n" +
-        error.message,
-
-        "#b91c1c"
-      );
-
-
-      sonidoRechazado();
-
-      vibrarRechazado();
-    }
-
+    sonidoError();
 
   } finally {
 
-    procesando =
-      false;
+    procesando = false;
   }
 }
 
 
-/* ============================
-   CÁMARA
-============================ */
+/* CÁMARA */
 
 async function iniciarCamara() {
 
-  if (scanner) {
-    return;
-  }
-
-
   scanner =
-    new Html5Qrcode(
-      "reader"
-    );
-
+    new Html5Qrcode("reader");
 
   try {
 
     await scanner.start(
 
-      {
-        facingMode:
-          "environment"
-      },
+      { facingMode: "environment" },
 
       {
         fps: 10,
-
         qrbox: {
           width: 240,
           height: 240
         }
       },
 
-      function(codigo) {
-
-        validarEntrada(
-          codigo
-        );
+      (codigo) => {
+        validarEntrada(codigo);
       },
 
-      function() {}
+      () => {}
     );
-
 
     mostrar(
       "LISTO PARA ESCANEAR",
@@ -861,35 +605,13 @@ async function iniciarCamara() {
       "#293241"
     );
 
-
-  } catch (error) {
-
-    scanner = null;
-
+  } catch(error) {
 
     mostrar(
-      "NO SE PUDO ABRIR LA CÁMARA",
-
-      "ERROR REAL:\n" +
-      error.message,
-
+      "ERROR DE CÁMARA",
+      String(error),
       "#b91c1c"
     );
-
-
-    document
-      .getElementById("iniciar")
-      .style.display =
-      "block";
-
-
-    document
-      .getElementById("iniciar")
-      .disabled =
-      false;
-
-
-    console.error(error);
   }
 }
 
