@@ -1,0 +1,100 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Aura Palace - Lector QR</title>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      background: #10131c;
+      color: white;
+      font-family: Arial, sans-serif;
+      text-align: center;
+    }
+    h1 { color: #d7b878; }
+    #reader {
+      max-width: 420px;
+      margin: 20px auto;
+    }
+    #resultado {
+      padding: 20px;
+      margin: 20px auto;
+      max-width: 420px;
+      border-radius: 12px;
+      background: #293241;
+      font-size: 20px;
+      overflow-wrap: anywhere;
+    }
+    button {
+      padding: 15px 25px;
+      background: #d7b878;
+      border: none;
+      border-radius: 8px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>AURA PALACE</h1>
+  <h2>LECTOR DE ENTRADAS QR</h2>
+
+  <button id="activar" onclick="iniciar()">
+    ACTIVAR CÁMARA
+  </button>
+
+  <div id="reader"></div>
+  <div id="resultado">Esperando lectura...</div>
+
+  <script>
+    let lector;
+    let ultimoCodigo = "";
+    let ultimaLectura = 0;
+
+    async function iniciar() {
+      if (lector) return;
+
+      if (typeof Html5Qrcode === "undefined") {
+        mostrar("Error al cargar el lector QR");
+        return;
+      }
+
+      lector = new Html5Qrcode("reader");
+
+      try {
+        await lector.start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: 230 },
+          function(codigo) {
+            const ahora = Date.now();
+
+            if (codigo === ultimoCodigo &&
+                ahora - ultimaLectura < 3000) {
+              return;
+            }
+
+            ultimoCodigo = codigo;
+            ultimaLectura = ahora;
+
+            mostrar("QR DETECTADO: " + codigo);
+          },
+          function() {}
+        );
+
+        document.getElementById("activar").disabled = true;
+      } catch (error) {
+        mostrar("Error de cámara: " + error);
+        lector = null;
+      }
+    }
+
+    function mostrar(mensaje) {
+      document.getElementById("resultado").textContent = mensaje;
+    }
+  </script>
+</body>
+</html>
