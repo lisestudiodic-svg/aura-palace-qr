@@ -1,129 +1,591 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Aura Palace - Lector QR</title>
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <title>Aura Palace - Control QR</title>
+
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+
   <style>
+    * { box-sizing: border-box; }
+
     body {
       margin: 0;
-      padding: 20px;
+      padding: 18px;
       background: #10131c;
       color: white;
       font-family: Arial, sans-serif;
       text-align: center;
     }
-    h1 { color: #d7b878; }
+
+    h1 {
+      color: #d7b878;
+      margin: 5px 0;
+      font-size: 32px;
+    }
+
+    h2 {
+      margin: 0 0 18px;
+      font-size: 18px;
+      font-weight: normal;
+    }
+
     #reader {
-      max-width: 420px;
-      margin: 20px auto;
+      width: 100%;
+      max-width: 430px;
+      margin: 18px auto;
+      border-radius: 14px;
+      overflow: hidden;
     }
+
     #resultado {
-      padding: 20px;
-      margin: 20px auto;
-      max-width: 420px;
-      border-radius: 12px;
+      width: 100%;
+      max-width: 430px;
+      min-height: 165px;
+      margin: 18px auto;
+      padding: 22px 15px;
+      border-radius: 15px;
       background: #293241;
-      font-size: 20px;
-      overflow-wrap: anywhere;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
     }
+
+    #estado {
+      font-size: 27px;
+      line-height: 1.15;
+      font-weight: bold;
+    }
+
+    #detalle {
+      white-space: pre-line;
+      margin-top: 12px;
+      font-size: 20px;
+      line-height: 1.4;
+    }
+
     button {
-      padding: 15px 25px;
+      width: 100%;
+      max-width: 430px;
+      padding: 17px;
+      border: 0;
+      border-radius: 10px;
       background: #d7b878;
-      border: none;
-      border-radius: 8px;
+      color: #111;
       font-size: 18px;
       font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: .6;
+    }
+
+    #sesion {
+      font-size: 13px;
+      opacity: .7;
+      margin-top: 10px;
     }
   </style>
 </head>
+
 <body>
-  <h1>AURA PALACE</h1>
-  <h2>LECTOR DE ENTRADAS QR</h2>
 
-  <button id="activar" onclick="iniciar()">
-    ACTIVAR CÁMARA
-  </button>
+<h1>AURA PALACE</h1>
+<h2>CONTROL DE ENTRADAS QR</h2>
 
-  <div id="reader"></div>
-  <div id="resultado">Esperando lectura...</div>
+<button id="iniciar" onclick="iniciarControl()">
+  INICIAR CONTROL
+</button>
 
-  <script>
-    let lector;
-    let ultimoCodigo = "";
-    let ultimaLectura = 0;
+<div id="sesion">Acceso protegido con Google</div>
 
-    async function iniciar() {
-      if (lector) return;
+<div id="reader"></div>
 
-      if (typeof Html5Qrcode === "undefined") {
-        mostrar("Error al cargar el lector QR");
+<div id="resultado">
+  <div id="estado">Control detenido</div>
+  <div id="detalle">Tocá INICIAR CONTROL</div>
+</div>
+
+<script>
+
+const CLIENT_ID =
+  "649138944017-rretdreji3l8u53bh6mo2q49sto1n058.apps.googleusercontent.com";
+
+const SPREADSHEET_ID =
+  "1FBUPZIg_rd_vpGvQ2m5EKg3jv-8Q6B7oSSmIlWdDE_o";
+
+const SHEET_NAME = "ENTRADAS";
+
+let accessToken = "";
+let tokenClient = null;
+let scanner = null;
+let procesando = false;
+
+let ultimoCodigo = "";
+let ultimoMomento = 0;
+
+
+/* ==========================================
+   INTERFAZ
+========================================== */
+
+function mostrar(titulo, detalle, color) {
+  document.getElementById("estado").textContent = titulo;
+  document.getElementById("detalle").textContent = detalle || "";
+  document.getElementById("resultado").style.background = color;
+}
+
+
+/* ==========================================
+   SONIDO
+========================================== */
+
+function tono(freq, duracion) {
+  try {
+    const AudioCtx =
+      window.AudioContext || window.webkitAudioContext;
+
+    const audio = new AudioCtx();
+    const osc = audio.createOscillator();
+    const gain = audio.createGain();
+
+    osc.type = "sine";
+    osc.frequency.value = freq;
+    gain.gain.value = 0.18;
+
+    osc.connect(gain);
+    gain.connect(audio.destination);
+
+    osc.start();
+    osc.stop(audio.currentTime + duracion);
+
+    osc.onended = () => audio.close();
+
+  } catch (e) {}
+}
+
+
+function sonidoValido() {
+  tono(880, .12);
+  setTimeout(() => tono(1250, .18), 140);
+}
+
+
+function sonidoUtilizada() {
+  tono(520, .20);
+  setTimeout(() => tono(520, .20), 260);
+}
+
+
+function sonidoRechazado() {
+  tono(260, .40);
+}
+
+
+/* ==========================================
+   VIBRACIÓN
+========================================== */
+
+function vibrarValido() {
+  if (navigator.vibrate)
+    navigator.vibrate(180);
+}
+
+function vibrarUtilizada() {
+  if (navigator.vibrate)
+    navigator.vibrate([250,120,250]);
+}
+
+function vibrarRechazado() {
+  if (navigator.vibrate)
+    navigator.vibrate([400,150,400]);
+}
+
+
+/* ==========================================
+   GOOGLE OAUTH
+========================================== */
+
+function iniciarControl() {
+
+  if (!window.google || !google.accounts) {
+    mostrar(
+      "ERROR",
+      "Google todavía no terminó de cargar. Intentá nuevamente.",
+      "#b91c1c"
+    );
+    return;
+  }
+
+  document.getElementById("iniciar").disabled = true;
+
+  tokenClient = google.accounts.oauth2.initTokenClient({
+
+    client_id: CLIENT_ID,
+
+    scope:
+      "https://www.googleapis.com/auth/spreadsheets",
+
+    callback: async function(response) {
+
+      if (response.error) {
+        document.getElementById("iniciar").disabled = false;
+
+        mostrar(
+          "ACCESO CANCELADO",
+          "No se inició el control",
+          "#b91c1c"
+        );
+
         return;
       }
 
-      lector = new Html5Qrcode("reader");
+      accessToken = response.access_token;
 
-      try {
-        await lector.start(
-          { facingMode: "environment" },
-          { fps: 10, qrbox: 230 },
-          function(codigo) {
-            const ahora = Date.now();
+      document.getElementById("sesion").textContent =
+        "Google conectado ✓";
 
-            if (codigo === ultimoCodigo &&
-                ahora - ultimaLectura < 3000) {
-              return;
-            }
+      document.getElementById("iniciar").style.display =
+        "none";
 
-            ultimoCodigo = codigo;
-            ultimaLectura = ahora;
+      await iniciarCamara();
+    }
+  });
 
-            mostrar("QR DETECTADO: " + codigo);
-            sonar();
-if (navigator.vibrate) navigator.vibrate(200);
-          },
-          function() {}
-        );
+  tokenClient.requestAccessToken({
+    prompt: ""
+  });
+}
 
-        document.getElementById("activar").disabled = true;
-      } catch (error) {
-        mostrar("Error de cámara: " + error);
-        lector = null;
+
+/* ==========================================
+   GOOGLE SHEETS
+========================================== */
+
+function apiBase() {
+  return "https:" + "//sheets.googleapis.com/v4/spreadsheets/";
+}
+
+
+async function leerEntradas() {
+
+  const rango =
+    encodeURIComponent(SHEET_NAME + "!A2:G");
+
+  const respuesta = await fetch(
+    apiBase() +
+    SPREADSHEET_ID +
+    "/values/" +
+    rango,
+    {
+      headers: {
+        Authorization: "Bearer " + accessToken
       }
     }
+  );
 
-    function mostrar(mensaje) {
-      document.getElementById("resultado").textContent = mensaje;
+  if (respuesta.status === 401) {
+    throw new Error("SESION_VENCIDA");
+  }
+
+  if (!respuesta.ok) {
+    throw new Error("Error al consultar Google Sheets");
+  }
+
+  const datos = await respuesta.json();
+
+  return datos.values || [];
+}
+
+
+async function registrarIngreso(numeroFila) {
+
+  const rango =
+    encodeURIComponent(
+      SHEET_NAME + "!F" + numeroFila + ":G" + numeroFila
+    );
+
+  const fecha = new Date().toISOString();
+
+  const respuesta = await fetch(
+    apiBase() +
+    SPREADSHEET_ID +
+    "/values/" +
+    rango +
+    "?valueInputOption=USER_ENTERED",
+    {
+      method: "PUT",
+
+      headers: {
+        Authorization: "Bearer " + accessToken,
+        "Content-Type": "application/json"
+      },
+
+      body: JSON.stringify({
+        values: [
+          [
+            "INGRESO REGISTRADO",
+            fecha
+          ]
+        ]
+      })
     }
+  );
 
-function sonar() {
-  try {
-    const AudioContexto =
-      window.AudioContext || window.webkitAudioContext;
-
-    const audio = new AudioContexto();
-    const oscilador = audio.createOscillator();
-    const volumen = audio.createGain();
-
-    oscilador.type = "sine";
-    oscilador.frequency.value = 950;
-
-    volumen.gain.value = 0.15;
-
-    oscilador.connect(volumen);
-    volumen.connect(audio.destination);
-
-    oscilador.start();
-    oscilador.stop(audio.currentTime + 0.15);
-
-    oscilador.onended = () => audio.close();
-  } catch (error) {
-    console.log("Sonido no disponible", error);
+  if (!respuesta.ok) {
+    throw new Error("No se pudo registrar el ingreso");
   }
 }
 
-  </script>
+
+/* ==========================================
+   VALIDAR QR
+========================================== */
+
+async function validarEntrada(codigo) {
+
+  codigo = String(codigo || "").trim();
+
+  if (!codigo || procesando)
+    return;
+
+  const ahora = Date.now();
+
+  if (
+    codigo === ultimoCodigo &&
+    ahora - ultimoMomento < 3000
+  ) {
+    return;
+  }
+
+  ultimoCodigo = codigo;
+  ultimoMomento = ahora;
+
+  procesando = true;
+
+  mostrar(
+    "VERIFICANDO...",
+    "Consultando entrada",
+    "#334155"
+  );
+
+
+  try {
+
+    const entradas = await leerEntradas();
+
+    const indice = entradas.findIndex(
+      fila =>
+        String(fila[1] || "").trim() === codigo
+    );
+
+
+    /* NO EXISTE */
+
+    if (indice === -1) {
+
+      mostrar(
+        "✕ INGRESO RECHAZADO",
+        "Entrada no encontrada",
+        "#b91c1c"
+      );
+
+      sonidoRechazado();
+      vibrarRechazado();
+
+      return;
+    }
+
+
+    const entrada = entradas[indice];
+
+    const numero =
+      String(entrada[0] || "");
+
+    const comprador =
+      String(entrada[2] || "").trim();
+
+    const pago =
+      String(entrada[4] || "")
+        .trim()
+        .toUpperCase();
+
+    const ingreso =
+      String(entrada[5] || "")
+        .trim()
+        .toUpperCase();
+
+
+    /* YA UTILIZADA */
+
+    if (ingreso === "INGRESO REGISTRADO") {
+
+      mostrar(
+        "⚠ ENTRADA YA UTILIZADA",
+        "Entrada N.º " + numero +
+        (comprador ? "\n" + comprador : "") +
+        "\nNO PERMITIR INGRESO",
+        "#a66a08"
+      );
+
+      sonidoUtilizada();
+      vibrarUtilizada();
+
+      return;
+    }
+
+
+    /* NO PAGADA */
+
+    if (pago !== "PAGADO") {
+
+      mostrar(
+        "✕ ENTRADA NO HABILITADA",
+        "Entrada N.º " + numero +
+        (comprador ? "\n" + comprador : "") +
+        "\nPago no registrado",
+        "#b91c1c"
+      );
+
+      sonidoRechazado();
+      vibrarRechazado();
+
+      return;
+    }
+
+
+    /* REGISTRAR */
+
+    const numeroFila = indice + 2;
+
+    await registrarIngreso(numeroFila);
+
+
+    /* AUTORIZADA */
+
+    mostrar(
+      "✓ INGRESO AUTORIZADO",
+      "Entrada N.º " + numero +
+      (comprador ? "\n" + comprador : "") +
+      "\nIngreso registrado",
+      "#16803c"
+    );
+
+    sonidoValido();
+    vibrarValido();
+
+
+  } catch (error) {
+
+    if (error.message === "SESION_VENCIDA") {
+
+      mostrar(
+        "SESIÓN VENCIDA",
+        "Volvé a iniciar el control",
+        "#a66a08"
+      );
+
+      document.getElementById("iniciar").style.display =
+        "block";
+
+      document.getElementById("iniciar").disabled =
+        false;
+
+      accessToken = "";
+
+    } else {
+
+      mostrar(
+        "✕ ERROR DE CONEXIÓN",
+        "No se modificó la entrada. Intentá nuevamente.",
+        "#b91c1c"
+      );
+
+      sonidoRechazado();
+      vibrarRechazado();
+    }
+
+    console.error(error);
+
+  } finally {
+
+    procesando = false;
+  }
+}
+
+
+/* ==========================================
+   CÁMARA
+========================================== */
+
+async function iniciarCamara() {
+
+  if (scanner)
+    return;
+
+  scanner = new Html5Qrcode("reader");
+
+  try {
+
+    await scanner.start(
+
+      {
+        facingMode: "environment"
+      },
+
+      {
+        fps: 10,
+
+        qrbox: {
+          width: 240,
+          height: 240
+        }
+      },
+
+      function(codigo) {
+
+        validarEntrada(codigo);
+
+      },
+
+      function() {}
+    );
+
+
+    mostrar(
+      "LISTO PARA ESCANEAR",
+      "Apuntá la cámara al código QR",
+      "#293241"
+    );
+
+
+  } catch (error) {
+
+    scanner = null;
+
+    mostrar(
+      "NO SE PUDO ABRIR LA CÁMARA",
+      "Permití el acceso a la cámara",
+      "#b91c1c"
+    );
+
+    document.getElementById("iniciar").style.display =
+      "block";
+
+    document.getElementById("iniciar").disabled =
+      false;
+
+    console.error(error);
+  }
+}
+
+</script>
+
 </body>
 </html>
