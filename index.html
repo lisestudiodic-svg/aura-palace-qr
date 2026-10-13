@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
+
   <meta name="viewport"
         content="width=device-width, initial-scale=1, maximum-scale=1">
 
@@ -11,7 +12,9 @@
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 
   <style>
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
     body {
       margin: 0;
@@ -50,6 +53,7 @@
       padding: 22px 15px;
       border-radius: 15px;
       background: #293241;
+
       display: flex;
       flex-direction: column;
       justify-content: center;
@@ -65,8 +69,9 @@
     #detalle {
       white-space: pre-line;
       margin-top: 12px;
-      font-size: 20px;
+      font-size: 18px;
       line-height: 1.4;
+      overflow-wrap: anywhere;
     }
 
     button {
@@ -96,21 +101,29 @@
 
 <body>
 
-<h1>AURA PALACE</h1>
-<h2>CONTROL DE ENTRADAS QR</h2>
+  <h1>AURA PALACE</h1>
+  <h2>CONTROL DE ENTRADAS QR</h2>
 
-<button id="iniciar" onclick="iniciarControl()">
-  INICIAR CONTROL
-</button>
+  <button id="iniciar" onclick="iniciarControl()">
+    INICIAR CONTROL
+  </button>
 
-<div id="sesion">Acceso protegido con Google</div>
+  <div id="sesion">
+    Acceso protegido con Google
+  </div>
 
-<div id="reader"></div>
+  <div id="reader"></div>
 
-<div id="resultado">
-  <div id="estado">Control detenido</div>
-  <div id="detalle">Tocá INICIAR CONTROL</div>
-</div>
+  <div id="resultado">
+    <div id="estado">
+      Control detenido
+    </div>
+
+    <div id="detalle">
+      Tocá INICIAR CONTROL
+    </div>
+  </div>
+
 
 <script>
 
@@ -131,132 +144,209 @@ let ultimoCodigo = "";
 let ultimoMomento = 0;
 
 
-/* ==========================================
-   INTERFAZ
-========================================== */
+/* ============================
+   PANTALLA
+============================ */
 
 function mostrar(titulo, detalle, color) {
-  document.getElementById("estado").textContent = titulo;
-  document.getElementById("detalle").textContent = detalle || "";
-  document.getElementById("resultado").style.background = color;
+
+  document.getElementById("estado").textContent =
+    titulo;
+
+  document.getElementById("detalle").textContent =
+    detalle || "";
+
+  document.getElementById("resultado").style.background =
+    color;
 }
 
 
-/* ==========================================
-   SONIDO
-========================================== */
+/* ============================
+   SONIDOS
+============================ */
 
 function tono(freq, duracion) {
-  try {
-    const AudioCtx =
-      window.AudioContext || window.webkitAudioContext;
 
-    const audio = new AudioCtx();
-    const osc = audio.createOscillator();
-    const gain = audio.createGain();
+  try {
+
+    const AudioCtx =
+      window.AudioContext ||
+      window.webkitAudioContext;
+
+    const audio =
+      new AudioCtx();
+
+    const osc =
+      audio.createOscillator();
+
+    const gain =
+      audio.createGain();
 
     osc.type = "sine";
-    osc.frequency.value = freq;
-    gain.gain.value = 0.18;
+
+    osc.frequency.value =
+      freq;
+
+    gain.gain.value =
+      0.18;
 
     osc.connect(gain);
-    gain.connect(audio.destination);
+
+    gain.connect(
+      audio.destination
+    );
 
     osc.start();
-    osc.stop(audio.currentTime + duracion);
 
-    osc.onended = () => audio.close();
+    osc.stop(
+      audio.currentTime +
+      duracion
+    );
 
-  } catch (e) {}
+    osc.onended =
+      () => audio.close();
+
+  } catch (error) {
+
+    console.log(error);
+  }
 }
 
 
 function sonidoValido() {
+
   tono(880, .12);
-  setTimeout(() => tono(1250, .18), 140);
+
+  setTimeout(
+    () => tono(1250, .18),
+    140
+  );
 }
 
 
 function sonidoUtilizada() {
+
   tono(520, .20);
-  setTimeout(() => tono(520, .20), 260);
+
+  setTimeout(
+    () => tono(520, .20),
+    260
+  );
 }
 
 
 function sonidoRechazado() {
+
   tono(260, .40);
 }
 
 
-/* ==========================================
+/* ============================
    VIBRACIÓN
-========================================== */
+============================ */
 
 function vibrarValido() {
-  if (navigator.vibrate)
+
+  if (navigator.vibrate) {
     navigator.vibrate(180);
+  }
 }
+
 
 function vibrarUtilizada() {
-  if (navigator.vibrate)
-    navigator.vibrate([250,120,250]);
+
+  if (navigator.vibrate) {
+    navigator.vibrate(
+      [250, 120, 250]
+    );
+  }
 }
+
 
 function vibrarRechazado() {
-  if (navigator.vibrate)
-    navigator.vibrate([400,150,400]);
+
+  if (navigator.vibrate) {
+    navigator.vibrate(
+      [400, 150, 400]
+    );
+  }
 }
 
 
-/* ==========================================
-   GOOGLE OAUTH
-========================================== */
+/* ============================
+   GOOGLE
+============================ */
 
 function iniciarControl() {
 
-  if (!window.google || !google.accounts) {
+  if (
+    !window.google ||
+    !google.accounts
+  ) {
+
     mostrar(
       "ERROR",
       "Google todavía no terminó de cargar. Intentá nuevamente.",
       "#b91c1c"
     );
+
     return;
   }
 
-  document.getElementById("iniciar").disabled = true;
 
-  tokenClient = google.accounts.oauth2.initTokenClient({
+  document
+    .getElementById("iniciar")
+    .disabled = true;
 
-    client_id: CLIENT_ID,
 
-    scope:
-      "https://www.googleapis.com/auth/spreadsheets",
+  tokenClient =
+    google.accounts.oauth2
+      .initTokenClient({
 
-    callback: async function(response) {
+        client_id: CLIENT_ID,
 
-      if (response.error) {
-        document.getElementById("iniciar").disabled = false;
+        scope:
+          "https://www.googleapis.com/auth/spreadsheets",
 
-        mostrar(
-          "ACCESO CANCELADO",
-          "No se inició el control",
-          "#b91c1c"
-        );
+        callback:
+          async function(response) {
 
-        return;
-      }
+            if (response.error) {
 
-      accessToken = response.access_token;
+              document
+                .getElementById("iniciar")
+                .disabled = false;
 
-      document.getElementById("sesion").textContent =
-        "Google conectado ✓";
+              mostrar(
+                "ACCESO CANCELADO",
+                response.error,
+                "#b91c1c"
+              );
 
-      document.getElementById("iniciar").style.display =
-        "none";
+              return;
+            }
 
-      await iniciarCamara();
-    }
-  });
+
+            accessToken =
+              response.access_token;
+
+
+            document
+              .getElementById("sesion")
+              .textContent =
+              "Google conectado ✓";
+
+
+            document
+              .getElementById("iniciar")
+              .style.display =
+              "none";
+
+
+            await iniciarCamara();
+          }
+      });
+
 
   tokenClient.requestAccessToken({
     prompt: ""
@@ -264,110 +354,224 @@ function iniciarControl() {
 }
 
 
-/* ==========================================
+/* ============================
    GOOGLE SHEETS
-========================================== */
+============================ */
 
 function apiBase() {
-  return "https:" + "//sheets.googleapis.com/v4/spreadsheets/";
+
+  return (
+    "https:" +
+    "//sheets.googleapis.com/v4/spreadsheets/"
+  );
 }
 
 
 async function leerEntradas() {
 
   const rango =
-    encodeURIComponent(SHEET_NAME + "!A2:G");
+    encodeURIComponent(
+      SHEET_NAME +
+      "!A2:G"
+    );
 
-  const respuesta = await fetch(
+
+  const url =
     apiBase() +
     SPREADSHEET_ID +
     "/values/" +
-    rango,
-    {
-      headers: {
-        Authorization: "Bearer " + accessToken
-      }
-    }
-  );
+    rango;
 
-  if (respuesta.status === 401) {
-    throw new Error("SESION_VENCIDA");
+
+  const respuesta =
+    await fetch(
+      url,
+      {
+        headers: {
+          Authorization:
+            "Bearer " +
+            accessToken
+        }
+      }
+    );
+
+
+  if (
+    respuesta.status === 401
+  ) {
+
+    throw new Error(
+      "SESIÓN VENCIDA"
+    );
   }
+
 
   if (!respuesta.ok) {
-    throw new Error("Error al consultar Google Sheets");
+
+    let texto = "";
+
+    try {
+
+      texto =
+        await respuesta.text();
+
+    } catch (e) {
+
+      texto =
+        "No se pudo leer la respuesta de Google";
+    }
+
+
+    throw new Error(
+      "Google Sheets respondió " +
+      respuesta.status +
+      ": " +
+      texto
+    );
   }
 
-  const datos = await respuesta.json();
+
+  const datos =
+    await respuesta.json();
+
 
   return datos.values || [];
 }
 
 
-async function registrarIngreso(numeroFila) {
+/* ============================
+   REGISTRAR INGRESO
+============================ */
+
+async function registrarIngreso(
+  numeroFila
+) {
 
   const rango =
     encodeURIComponent(
-      SHEET_NAME + "!F" + numeroFila + ":G" + numeroFila
+      SHEET_NAME +
+      "!F" +
+      numeroFila +
+      ":G" +
+      numeroFila
     );
 
-  const fecha = new Date().toISOString();
 
-  const respuesta = await fetch(
+  const fecha =
+    new Date()
+      .toISOString();
+
+
+  const url =
     apiBase() +
     SPREADSHEET_ID +
     "/values/" +
     rango +
-    "?valueInputOption=USER_ENTERED",
-    {
-      method: "PUT",
+    "?valueInputOption=USER_ENTERED";
 
-      headers: {
-        Authorization: "Bearer " + accessToken,
-        "Content-Type": "application/json"
-      },
 
-      body: JSON.stringify({
-        values: [
-          [
-            "INGRESO REGISTRADO",
-            fecha
-          ]
-        ]
-      })
-    }
-  );
+  const respuesta =
+    await fetch(
+      url,
+      {
+        method: "PUT",
+
+        headers: {
+
+          Authorization:
+            "Bearer " +
+            accessToken,
+
+          "Content-Type":
+            "application/json"
+        },
+
+        body:
+          JSON.stringify({
+
+            values: [
+              [
+                "INGRESO REGISTRADO",
+                fecha
+              ]
+            ]
+
+          })
+      }
+    );
+
 
   if (!respuesta.ok) {
-    throw new Error("No se pudo registrar el ingreso");
+
+    let texto = "";
+
+    try {
+
+      texto =
+        await respuesta.text();
+
+    } catch (e) {
+
+      texto =
+        "Sin detalle";
+    }
+
+
+    throw new Error(
+      "No se pudo registrar. Google respondió " +
+      respuesta.status +
+      ": " +
+      texto
+    );
   }
 }
 
 
-/* ==========================================
-   VALIDAR QR
-========================================== */
+/* ============================
+   VALIDAR ENTRADA
+============================ */
 
-async function validarEntrada(codigo) {
+async function validarEntrada(
+  codigo
+) {
 
-  codigo = String(codigo || "").trim();
+  codigo =
+    String(
+      codigo || ""
+    ).trim();
 
-  if (!codigo || procesando)
+
+  if (
+    !codigo ||
+    procesando
+  ) {
+
     return;
+  }
 
-  const ahora = Date.now();
+
+  const ahora =
+    Date.now();
+
 
   if (
     codigo === ultimoCodigo &&
     ahora - ultimoMomento < 3000
   ) {
+
     return;
   }
 
-  ultimoCodigo = codigo;
-  ultimoMomento = ahora;
 
-  procesando = true;
+  ultimoCodigo =
+    codigo;
+
+  ultimoMomento =
+    ahora;
+
+  procesando =
+    true;
+
 
   mostrar(
     "VERIFICANDO...",
@@ -378,15 +582,20 @@ async function validarEntrada(codigo) {
 
   try {
 
-    const entradas = await leerEntradas();
-
-    const indice = entradas.findIndex(
-      fila =>
-        String(fila[1] || "").trim() === codigo
-    );
+    const entradas =
+      await leerEntradas();
 
 
-    /* NO EXISTE */
+    const indice =
+      entradas.findIndex(
+        fila =>
+          String(
+            fila[1] || ""
+          ).trim() === codigo
+      );
+
+
+    /* ENTRADA INEXISTENTE */
 
     if (indice === -1) {
 
@@ -397,44 +606,72 @@ async function validarEntrada(codigo) {
       );
 
       sonidoRechazado();
+
       vibrarRechazado();
 
       return;
     }
 
 
-    const entrada = entradas[indice];
+    const entrada =
+      entradas[indice];
+
 
     const numero =
-      String(entrada[0] || "");
+      String(
+        entrada[0] || ""
+      );
+
 
     const comprador =
-      String(entrada[2] || "").trim();
+      String(
+        entrada[2] || ""
+      ).trim();
+
 
     const pago =
-      String(entrada[4] || "")
-        .trim()
-        .toUpperCase();
+      String(
+        entrada[4] || ""
+      )
+      .trim()
+      .toUpperCase();
+
 
     const ingreso =
-      String(entrada[5] || "")
-        .trim()
-        .toUpperCase();
+      String(
+        entrada[5] || ""
+      )
+      .trim()
+      .toUpperCase();
 
 
     /* YA UTILIZADA */
 
-    if (ingreso === "INGRESO REGISTRADO") {
+    if (
+      ingreso ===
+      "INGRESO REGISTRADO"
+    ) {
 
       mostrar(
         "⚠ ENTRADA YA UTILIZADA",
-        "Entrada N.º " + numero +
-        (comprador ? "\n" + comprador : "") +
+
+        "Entrada N.º " +
+        numero +
+
+        (
+          comprador
+          ? "\n" + comprador
+          : ""
+        ) +
+
         "\nNO PERMITIR INGRESO",
+
         "#a66a08"
       );
 
+
       sonidoUtilizada();
+
       vibrarUtilizada();
 
       return;
@@ -443,17 +680,30 @@ async function validarEntrada(codigo) {
 
     /* NO PAGADA */
 
-    if (pago !== "PAGADO") {
+    if (
+      pago !== "PAGADO"
+    ) {
 
       mostrar(
         "✕ ENTRADA NO HABILITADA",
-        "Entrada N.º " + numero +
-        (comprador ? "\n" + comprador : "") +
+
+        "Entrada N.º " +
+        numero +
+
+        (
+          comprador
+          ? "\n" + comprador
+          : ""
+        ) +
+
         "\nPago no registrado",
+
         "#b91c1c"
       );
 
+
       sonidoRechazado();
+
       vibrarRechazado();
 
       return;
@@ -462,28 +712,49 @@ async function validarEntrada(codigo) {
 
     /* REGISTRAR */
 
-    const numeroFila = indice + 2;
+    const numeroFila =
+      indice + 2;
 
-    await registrarIngreso(numeroFila);
+
+    await registrarIngreso(
+      numeroFila
+    );
 
 
     /* AUTORIZADA */
 
     mostrar(
       "✓ INGRESO AUTORIZADO",
-      "Entrada N.º " + numero +
-      (comprador ? "\n" + comprador : "") +
+
+      "Entrada N.º " +
+      numero +
+
+      (
+        comprador
+        ? "\n" + comprador
+        : ""
+      ) +
+
       "\nIngreso registrado",
+
       "#16803c"
     );
 
+
     sonidoValido();
+
     vibrarValido();
 
 
   } catch (error) {
 
-    if (error.message === "SESION_VENCIDA") {
+    console.error(error);
+
+
+    if (
+      error.message ===
+      "SESIÓN VENCIDA"
+    ) {
 
       mostrar(
         "SESIÓN VENCIDA",
@@ -491,52 +762,77 @@ async function validarEntrada(codigo) {
         "#a66a08"
       );
 
-      document.getElementById("iniciar").style.display =
+
+      document
+        .getElementById("iniciar")
+        .style.display =
         "block";
 
-      document.getElementById("iniciar").disabled =
+
+      document
+        .getElementById("iniciar")
+        .disabled =
         false;
+
 
       accessToken = "";
 
     } else {
 
+      /* IMPORTANTE:
+         AHORA MOSTRAMOS
+         EL ERROR REAL
+         EN EL CELULAR
+      */
+
       mostrar(
         "✕ ERROR DE CONEXIÓN",
-        "No se modificó la entrada. Intentá nuevamente.",
+
+        "ERROR REAL:\n" +
+        error.message,
+
         "#b91c1c"
       );
 
+
       sonidoRechazado();
+
       vibrarRechazado();
     }
 
-    console.error(error);
 
   } finally {
 
-    procesando = false;
+    procesando =
+      false;
   }
 }
 
 
-/* ==========================================
+/* ============================
    CÁMARA
-========================================== */
+============================ */
 
 async function iniciarCamara() {
 
-  if (scanner)
+  if (scanner) {
     return;
+  }
 
-  scanner = new Html5Qrcode("reader");
+
+  scanner =
+    new Html5Qrcode(
+      "reader"
+    );
+
 
   try {
 
     await scanner.start(
 
       {
-        facingMode: "environment"
+        facingMode:
+          "environment"
       },
 
       {
@@ -550,8 +846,9 @@ async function iniciarCamara() {
 
       function(codigo) {
 
-        validarEntrada(codigo);
-
+        validarEntrada(
+          codigo
+        );
       },
 
       function() {}
@@ -569,17 +866,28 @@ async function iniciarCamara() {
 
     scanner = null;
 
+
     mostrar(
       "NO SE PUDO ABRIR LA CÁMARA",
-      "Permití el acceso a la cámara",
+
+      "ERROR REAL:\n" +
+      error.message,
+
       "#b91c1c"
     );
 
-    document.getElementById("iniciar").style.display =
+
+    document
+      .getElementById("iniciar")
+      .style.display =
       "block";
 
-    document.getElementById("iniciar").disabled =
+
+    document
+      .getElementById("iniciar")
+      .disabled =
       false;
+
 
     console.error(error);
   }
